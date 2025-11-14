@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// লোকাল + প্রোডাকশন দুটো কভার করবে
 const baseURL =
   import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/";
 
@@ -21,8 +20,6 @@ instance.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
-
-export default instance;
 
 // Add response interceptor for debugging
 instance.interceptors.response.use(
