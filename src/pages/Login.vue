@@ -76,7 +76,7 @@ export default {
       this.error = null
       this.loading = true
       try {
-        const res = await axios.post("http://127.0.0.1:8000/api/auth/login/", {
+        const res = await api.post("/auth/login/", {
           username: this.username,
           password: this.password,
         })
