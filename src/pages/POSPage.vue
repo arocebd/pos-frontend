@@ -390,7 +390,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from "vue";
-import axios from "../axios";
+import axios from "@/axios";
 
 const customer = ref({ name: "", phone: "", points: 0 });
 const cart = ref([]);
