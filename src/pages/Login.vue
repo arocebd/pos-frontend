@@ -65,8 +65,7 @@ export default {
     }
   },
   created() {
-    // If already logged in, go to dashboard
-    const token = localStorage.getItem("token")
+    const token = localStorage.getItem("access") || localStorage.getItem("token")
     if (token) {
       this.$router.replace("/dashboard")
     }
@@ -75,26 +74,36 @@ export default {
     async login() {
       this.error = null
       this.loading = true
+
       try {
-       // baseURL + "/auth/login/"  =>  https://pos-backend-0cog.onrender.com/api/auth/login/
-        const res = await api.post("/api/auth/login/", {
+        const res = await api.post("/auth/login/", {
           username: this.username,
           password: this.password,
         })
 
-        // Save tokens & username for later display
+        // ব্যাকএন্ড কি পাঠাচ্ছে – access/refresh/token – সব কভার করা হলো
+        const access = res.data.access || res.data.token || null
+        const refresh = res.data.refresh || null
+
         localStorage.setItem(
-        "user",
-        JSON.stringify({
-        username: res.data.username || this.username,
-        avatarUrl: res.data.avatar_url ||"", // optional
-        })
-      )   
+          "user",
+          JSON.stringify({
+            username: res.data.username || this.username,
+            avatarUrl: res.data.avatar_url || "",
+          })
+        )
 
-      localStorage.setItem("token", res.data.token)
+        if (access) {
+          localStorage.setItem("access", access)
+          localStorage.setItem("token", access) // পুরোনো code support এর জন্য
+        }
+        if (refresh) {
+          localStorage.setItem("refresh", refresh)
+        }
 
-      this.$router.replace("/dashboard")
+        this.$router.replace("/dashboard")
       } catch (e) {
+        console.error("Login error:", e.response?.data || e.message)
         this.error =
           e?.response?.status === 401
             ? "Invalid username or password."
