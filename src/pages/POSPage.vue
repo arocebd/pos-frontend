@@ -35,7 +35,7 @@
         </div>
         
         <!-- Customer Search Results Dropdown -->
-        <div v-if="customerSuggestions.length > 0 && !customer.phone" class="absolute z-50 bg-white border rounded-lg shadow w-full mt-1 max-h-40 overflow-y-auto">
+        <div v-if="customerSuggestions.length > 0 && customer.phone" class="absolute z-50 bg-white border rounded-lg shadow w-full mt-1 max-h-40 overflow-y-auto">
           <div 
             v-for="cust in customerSuggestions" 
             :key="cust.id"
@@ -390,7 +390,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from "vue";
-import axios from "@/axios";
+import api from "@/axios";
 
 const customer = ref({ name: "", phone: "", points: 0 });
 const cart = ref([]);
@@ -424,7 +424,7 @@ async function searchCustomers() {
   }
   
   try {
-    const res = await axios.api.get(`/customers/?search=${phone}`);
+    const res = await api.get(`/customers/?search=${phone}`);
     customerSuggestions.value = res.data.results || res.data;
   } catch (err) {
     console.error("❌ Customer search error:", err);
@@ -451,7 +451,7 @@ async function fetchCustomerByPhone() {
   }
   
   try {
-    const res = await axios.api.get(`/customer-lookup/?phone=${phone}`);
+    const res = await api.get(`/customer-lookup/?phone=${phone}`);
     
     if (res.data && !res.data.error && !res.data.message) {
       customer.value.name = res.data.name;
@@ -481,7 +481,7 @@ onMounted(async () => {
 async function fetchAllProducts() {
   loading.value = true;
   try {
-    const res = await axios.api.get("/products/");
+    const res = await api.get("/products/");
     allProducts.value = res.data.results || res.data;
   } catch (err) {
     console.error("❌ Error fetching products:", err);
@@ -498,7 +498,7 @@ async function searchProducts() {
     return;
   }
   try {
-    const res = await axios.api.get(`/products/?search=${barcodeInput.value}`);
+    const res = await api.get(`/products/?search=${barcodeInput.value}`);
     suggestions.value = res.data.results || res.data;
   } catch (err) {
     console.error("❌ Search error:", err);
@@ -522,7 +522,7 @@ async function addProductByCode() {
   }
   
   try {
-    const res = await axios.api.get(`/product-lookup/?code=${barcodeInput.value}`);
+    const res = await api.get(`/product-lookup/?code=${barcodeInput.value}`);
     if (!res.data || res.data.error) {
       alert("❌ Product not found!");
       return;
@@ -704,7 +704,7 @@ async function checkout() {
 
     console.log("📦 Checkout Payload:", payload);
     
-    const res = await axios.api.post("/sales/", payload);
+    const res = await api.post("/sales/", payload);
     console.log("✅ Checkout Response:", res.data);
     
     if (res.data.success) {
