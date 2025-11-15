@@ -77,7 +77,7 @@ export default {
       this.loading = true
       try {
        // baseURL + "/auth/login/"  =>  https://pos-backend-0cog.onrender.com/api/auth/login/
-        const res = await api.post("/auth/login/", {
+        const res = await api.post("/api/auth/login/", {
           username: this.username,
           password: this.password,
         })
