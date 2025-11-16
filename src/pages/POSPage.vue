@@ -390,8 +390,9 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from "vue";
-import api from "@/axios";
+import api from "axios";
 
+const api = axios.create({ baseURL: "https://pos-backend-0cog.onrender.com/api" });
 const customer = ref({ name: "", phone: "", points: 0 });
 const cart = ref([]);
 const barcodeInput = ref("");
