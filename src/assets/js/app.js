@@ -1,4 +1,4 @@
-const baseUrl = "http://127.0.0.1:8000/api/products/";
+const baseUrl = "http://163.227.239.93/api/products/";
 
 async function loadProducts() {
   const res = await fetch(baseUrl);
