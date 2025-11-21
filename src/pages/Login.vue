@@ -51,7 +51,7 @@
 </template>
 
 <script>
-import api from "@/axios"
+import axios from axios
 
 export default {
   name: "Login",
@@ -81,7 +81,6 @@ export default {
           password: this.password,
         })
 
-        // ব্যাকএন্ড কি পাঠাচ্ছে – access/refresh/token – সব কভার করা হলো
         const access = res.data.access || res.data.token || null
         const refresh = res.data.refresh || null
 
@@ -95,7 +94,7 @@ export default {
 
         if (access) {
           localStorage.setItem("access", access)
-          localStorage.setItem("token", access) // পুরোনো code support এর জন্য
+          localStorage.setItem("token", access)
         }
         if (refresh) {
           localStorage.setItem("refresh", refresh)
