@@ -1,0 +1,17 @@
+server {
+    listen 80;
+    server_name 163.227.239.93;
+
+    location /static/ {
+        alias /srv/pos-backend/staticfiles/;
+    }
+
+    location /media/ {
+        alias /srv/pos-backend/media/;
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/srv/pos-backend/gunicorn.sock;
+    }
+}
