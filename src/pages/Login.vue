@@ -53,7 +53,7 @@
 <script>
 import axios from "axios"
 
-// VITE uses import.meta.env
+// For Vite, env vars are on import.meta.env
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://163.227.239.93/api",
   timeout: 10000,
@@ -74,36 +74,71 @@ export default {
   created() {
     const token = localStorage.getItem("access")
     if (token) {
-      this.$router.replace("/dashboard")
+      // Already logged in
+      this.$router.replace("/dashboard").catch(() => {})
     }
   },
 
   methods: {
     async login() {
+      if (!this.username.trim() || !this.password.trim()) {
+        this.error = "Please enter both username and password."
+        return
+      }
+
       this.error = null
       this.loading = true
 
       try {
-        const response = await api.post("/auth/login/", {
+        const { data } = await api.post("/auth/login/", {
           username: this.username.trim(),
           password: this.password,
         })
 
-        const { access, refresh } = response.data
+        console.log("Login response data:", data)
 
+        // Support multiple possible response formats
+        const access =
+          data.access || data.token || data.access_token || data.key
+        const refresh = data.refresh || data.refresh_token || null
+
+        if (!access) {
+          // We got 200 but no token – show the raw data for debugging
+          console.warn("No access token in response:", data)
+          this.error = "Unexpected response from server."
+          return
+        }
+
+        // Save tokens
         localStorage.setItem("access", access)
-        localStorage.setItem("refresh", refresh)
+        if (refresh) {
+          localStorage.setItem("refresh", refresh)
+        }
         localStorage.setItem(
           "user",
           JSON.stringify({ username: this.username.trim() })
         )
 
-        this.$router.replace("/dashboard")
+        // Try router navigation first
+        try {
+          await this.$router.replace("/dashboard")
+        } catch (navErr) {
+          console.error("Router error, falling back to hard redirect:", navErr)
+          // Fallback – full page reload
+          window.location.href = "/dashboard"
+        }
       } catch (error) {
         console.error("Login error:", error)
+        console.error("Response:", error.response?.data)
 
-        if (error.response?.status === 401) {
+        if (error.code === "ECONNABORTED") {
+          this.error = "Request timeout. Please try again."
+        } else if (error.response?.status === 401) {
           this.error = "Invalid username or password."
+        } else if (error.response?.status >= 500) {
+          this.error = "Server error. Please try again later."
+        } else if (error.request) {
+          this.error = "Network error. Please check your connection."
         } else {
           this.error = "Login failed. Please try again."
         }
@@ -114,5 +149,3 @@ export default {
   },
 }
 </script>
-
-
