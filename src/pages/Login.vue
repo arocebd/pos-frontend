@@ -77,85 +77,45 @@ export default {
     }
   },
   methods: {
-    async login() {
-      this.error = null
-      this.loading = true
+async login() {
+  this.error = null
+  this.loading = true
 
-      try {
-        // Try different possible login endpoints
-        const endpoints = [
-          "/auth/login/",
-          "/login/", 
-          "/token/",
-          "/api-token-auth/",
-          "/auth/token/"
-        ]
+  try {
+    const response = await api.post("/auth/login/", {
+      username: this.username,
+      password: this.password,
+    })
 
-        let response = null
-        let lastError = null
+    const access = response.data.access
+    const refresh = response.data.refresh
 
-        // Try each endpoint until one works
-        for (const endpoint of endpoints) {
-          try {
-            response = await api.post(endpoint, {
-              username: this.username,
-              password: this.password,
-            })
-            break // Stop if successful
-          } catch (err) {
-            lastError = err
-            console.log(`Endpoint ${endpoint} failed:`, err.response?.status)
-            continue // Try next endpoint
-          }
-        }
+    // Store tokens
+    localStorage.setItem("access", access)
+    localStorage.setItem("refresh", refresh)
 
-        if (!response) {
-          throw lastError || new Error("No valid login endpoint found")
-        }
+    // (Optional) Store username
+    localStorage.setItem(
+      "user",
+      JSON.stringify({ username: this.username })
+    )
 
-        console.log("Login response:", response.data)
+    // Redirect
+    this.$router.replace("/dashboard")
+  } catch (e) {
+    console.error("Login error:", e.response?.data)
 
-        // Handle different response formats
-        const access = response.data.access || response.data.token || response.data.access_token
-        const refresh = response.data.refresh || response.data.refresh_token
-
-        // Store user data
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            username: response.data.username || response.data.user?.username || this.username,
-            avatarUrl: response.data.avatar_url || response.data.user?.avatar_url || "",
-          })
-        )
-
-        if (access) {
-          localStorage.setItem("access", access)
-          // Also store as token for compatibility
-          localStorage.setItem("token", access)
-        }
-        if (refresh) {
-          localStorage.setItem("refresh", refresh)
-        }
-
-        this.$router.replace("/dashboard")
-      } catch (e) {
-        console.error("Login error details:", e)
-        console.error("Response data:", e.response?.data)
-        console.error("Status:", e.response?.status)
-        
-        if (e?.response?.status === 401) {
-          this.error = "Invalid username or password."
-        } else if (e?.response?.status === 400) {
-          this.error = e.response.data.detail || "Invalid request."
-        } else if (e?.response?.status === 404) {
-          this.error = "Login endpoint not found. Please check API configuration."
-        } else {
-          this.error = "Login failed. Please try again."
-        }
-      } finally {
-        this.loading = false
-      }
-    },
+    if (e?.response?.status === 401) {
+      this.error = "Invalid username or password."
+    } else if (e?.response?.status === 400) {
+      this.error = e.response.data.detail || "Invalid request."
+    } else {
+      this.error = "Login failed. Please try again."
+    }
+  } finally {
+    this.loading = false
+    }
+  }
   },
 }
 </script>
