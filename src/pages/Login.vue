@@ -53,9 +53,9 @@
 <script>
 import axios from "axios"
 
-// Create axios instance with base URL
+// axios instance
 const api = axios.create({
-  baseURL: "http://163.227.239.93/api", // Adjust if your API is at different base
+  baseURL: "http://163.227.239.93/api",
   timeout: 10000,
 })
 
@@ -70,52 +70,50 @@ export default {
       error: null,
     }
   },
+
   created() {
-    const token = localStorage.getItem("access") || localStorage.getItem("token")
+    const token = localStorage.getItem("access")
     if (token) {
       this.$router.replace("/dashboard")
     }
   },
+
   methods: {
-async login() {
-  this.error = null
-  this.loading = true
+    async login() {
+      this.error = null
+      this.loading = true
 
-  try {
-    const response = await api.post("/auth/login/", {
-      username: this.username,
-      password: this.password,
-    })
+      try {
+        const response = await api.post("/auth/login/", {
+          username: this.username,
+          password: this.password,
+        })
 
-    const access = response.data.access
-    const refresh = response.data.refresh
+        const access = response.data.access
+        const refresh = response.data.refresh
 
-    // Store tokens
-    localStorage.setItem("access", access)
-    localStorage.setItem("refresh", refresh)
+        localStorage.setItem("access", access)
+        localStorage.setItem("refresh", refresh)
 
-    // (Optional) Store username
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ username: this.username })
-    )
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ username: this.username })
+        )
 
-    // Redirect
-    this.$router.replace("/dashboard")
-  } catch (e) {
-    console.error("Login error:", e.response?.data)
+        this.$router.replace("/dashboard")
+      } catch (e) {
+        console.error("Login error:", e)
 
-    if (e?.response?.status === 401) {
-      this.error = "Invalid username or password."
-    } else if (e?.response?.status === 400) {
-      this.error = e.response.data.detail || "Invalid request."
-    } else {
-      this.error = "Login failed. Please try again."
-    }
-  } finally {
-    this.loading = false
-    }
-  }
+        if (e?.response?.status === 401) {
+          this.error = "Invalid username or password."
+        } else {
+          this.error = "Login failed. Please try again."
+        }
+      } finally {
+        this.loading = false
+      }
+    },
   },
 }
 </script>
+
