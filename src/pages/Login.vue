@@ -53,9 +53,9 @@
 <script>
 import axios from "axios"
 
-// axios instance
+// VITE uses import.meta.env
 const api = axios.create({
-  baseURL: "http://163.227.239.93/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://163.227.239.93/api",
   timeout: 10000,
 })
 
@@ -85,26 +85,24 @@ export default {
 
       try {
         const response = await api.post("/auth/login/", {
-          username: this.username,
+          username: this.username.trim(),
           password: this.password,
         })
 
-        const access = response.data.access
-        const refresh = response.data.refresh
+        const { access, refresh } = response.data
 
         localStorage.setItem("access", access)
         localStorage.setItem("refresh", refresh)
-
         localStorage.setItem(
           "user",
-          JSON.stringify({ username: this.username })
+          JSON.stringify({ username: this.username.trim() })
         )
 
         this.$router.replace("/dashboard")
-      } catch (e) {
-        console.error("Login error:", e)
+      } catch (error) {
+        console.error("Login error:", error)
 
-        if (e?.response?.status === 401) {
+        if (error.response?.status === 401) {
           this.error = "Invalid username or password."
         } else {
           this.error = "Login failed. Please try again."
@@ -116,4 +114,5 @@ export default {
   },
 }
 </script>
+
 
