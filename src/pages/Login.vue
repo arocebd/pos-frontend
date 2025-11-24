@@ -53,6 +53,12 @@
 <script>
 import axios from "axios"
 
+// Create axios instance with base URL
+const api = axios.create({
+  baseURL: "http://163.227.239.93/api", // Adjust if your API is at different base
+  timeout: 10000,
+})
+
 export default {
   name: "Login",
   data() {
@@ -76,24 +82,55 @@ export default {
       this.loading = true
 
       try {
-        const res = await api.post("/auth/login/", {
-          username: this.username,
-          password: this.password,
-        })
+        // Try different possible login endpoints
+        const endpoints = [
+          "/auth/login/",
+          "/login/", 
+          "/token/",
+          "/api-token-auth/",
+          "/auth/token/"
+        ]
 
-        const access = res.data.access || res.data.token || null
-        const refresh = res.data.refresh || null
+        let response = null
+        let lastError = null
 
+        // Try each endpoint until one works
+        for (const endpoint of endpoints) {
+          try {
+            response = await api.post(endpoint, {
+              username: this.username,
+              password: this.password,
+            })
+            break // Stop if successful
+          } catch (err) {
+            lastError = err
+            console.log(`Endpoint ${endpoint} failed:`, err.response?.status)
+            continue // Try next endpoint
+          }
+        }
+
+        if (!response) {
+          throw lastError || new Error("No valid login endpoint found")
+        }
+
+        console.log("Login response:", response.data)
+
+        // Handle different response formats
+        const access = response.data.access || response.data.token || response.data.access_token
+        const refresh = response.data.refresh || response.data.refresh_token
+
+        // Store user data
         localStorage.setItem(
           "user",
           JSON.stringify({
-            username: res.data.username || this.username,
-            avatarUrl: res.data.avatar_url || "",
+            username: response.data.username || response.data.user?.username || this.username,
+            avatarUrl: response.data.avatar_url || response.data.user?.avatar_url || "",
           })
         )
 
         if (access) {
           localStorage.setItem("access", access)
+          // Also store as token for compatibility
           localStorage.setItem("token", access)
         }
         if (refresh) {
@@ -102,11 +139,19 @@ export default {
 
         this.$router.replace("/dashboard")
       } catch (e) {
-        console.error("Login error:", e.response?.data || e.message)
-        this.error =
-          e?.response?.status === 401
-            ? "Invalid username or password."
-            : "Login failed. Please try again."
+        console.error("Login error details:", e)
+        console.error("Response data:", e.response?.data)
+        console.error("Status:", e.response?.status)
+        
+        if (e?.response?.status === 401) {
+          this.error = "Invalid username or password."
+        } else if (e?.response?.status === 400) {
+          this.error = e.response.data.detail || "Invalid request."
+        } else if (e?.response?.status === 404) {
+          this.error = "Login endpoint not found. Please check API configuration."
+        } else {
+          this.error = "Login failed. Please try again."
+        }
       } finally {
         this.loading = false
       }
