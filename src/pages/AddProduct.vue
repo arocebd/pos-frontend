@@ -126,8 +126,6 @@ const newCat = ref("");
 const addingCat = ref(false);
 const loading = ref(false);
 
-const api = axios.create({ baseURL: "http://127.0.0.1:8000/api/" });
-
 // Load categories
 const loadCategories = async () => {
   try {
