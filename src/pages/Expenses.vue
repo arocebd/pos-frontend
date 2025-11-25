@@ -136,7 +136,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import axios from "../axios";
+import api from "@/services/api.js";
 
 const expenses = ref([]);
 const summary = ref({ grand_total: 0, by_category: [], by_day: [] });
@@ -179,12 +179,12 @@ async function loadData() {
     }
 
     // Load expense list
-    const listRes = await axios.get(`/expenses/?${params.toString()}`);
+    const listRes = await api.get(`/expenses/?${params.toString()}`);
     expenses.value = listRes.data?.results || listRes.data || [];
 
     // Load summary safely
     try {
-      const sumRes = await axios.get(`/expenses/summary/?${params.toString()}`);
+      const sumRes = await api.get(`/expenses/summary/?${params.toString()}`);
       summary.value = sumRes.data || { grand_total: 0, by_category: [], by_day: [] };
     } catch (e) {
       console.warn("⚠️ Summary not available:", e.message);
@@ -204,7 +204,7 @@ async function save() {
     const payload = { ...form.value };
     // Optional: if you want to set custom date instead of auto_now_add:
     // backend model uses auto_now_add, so we pass date only if you later change to DateField(default=date.today)
-    const res = await axios.post(`/expenses/`, payload);
+    const res = await api.post(`/expenses/`, payload);
     if (res.status === 201 || res.data?.id) {
       openAdd.value = false;
       // reset form
@@ -226,7 +226,7 @@ async function save() {
 async function remove(id) {
   if (!confirm("Delete this expense?")) return;
   try {
-    await axios.delete(`/expenses/${id}/`);
+    await api.delete(`/expenses/${id}/`);
     await loadData();
   } catch (e) {
     console.error(e);
