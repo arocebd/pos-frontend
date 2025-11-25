@@ -269,7 +269,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import axios from "../axios";
+import api from "@/services/api.js";
 
 const customers = ref([]);
 const loading = ref(false);
@@ -325,7 +325,7 @@ async function fetchCustomers(page = 1) {
       url += '&ordering=name';
     }
 
-    const res = await axios.get(url);
+    const res = await api.get(url);
     customers.value = res.data.results || res.data;
     pagination.value = {
       next: res.data.next,
@@ -394,7 +394,7 @@ async function deleteCustomer(customerId) {
   }
 
   try {
-    await axios.delete(`/customers/${customerId}/`);
+    await api.delete(`/customers/${customerId}/`);
     await fetchCustomers(currentPage.value);
     alert("Customer deleted successfully!");
   } catch (err) {
@@ -407,7 +407,7 @@ async function deleteCustomer(customerId) {
 async function viewCustomerHistory(customer) {
   selectedCustomer.value = customer;
   try {
-    const res = await axios.get(`/sales/?customer=${customer.id}`);
+    const res = await api.get(`/sales/?customer=${customer.id}`);
     customerSales.value = res.data.results || res.data;
   } catch (err) {
     console.error("❌ Error fetching sales history:", err);
