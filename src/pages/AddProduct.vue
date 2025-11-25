@@ -150,7 +150,7 @@ const onImage = (e) => {
 
 // Validation
 const canSave = computed(() =>
-  form.value.title && form.value.product_code && form.value.category  && form.purchased_price && form.value.regular_price
+  form.value.title && form.value.product_code && form.value.category  && form.value.purchased_price && form.value.regular_price
 );
 
 // Add category
