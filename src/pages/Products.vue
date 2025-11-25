@@ -30,7 +30,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from "@/services/api.js"
+import api from "@/services/api.js"
 
 const products = ref([])
 
