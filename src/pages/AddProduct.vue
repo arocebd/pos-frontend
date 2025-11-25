@@ -105,7 +105,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import api from "axios";
+import api from "@/axios";
 
 const form = ref({
   title: "",
