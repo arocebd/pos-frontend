@@ -30,13 +30,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import axios from "@/services/api.js"
 
 const products = ref([])
 
 onMounted(async () => {
   try {
-    const res = await axios.get('http://127.0.0.1:8000/api/products/')
+    const res = await api.get('/products/')
     products.value = res.data
   } catch (err) {
     console.error('Failed to fetch products:', err)
