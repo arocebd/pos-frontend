@@ -150,7 +150,7 @@ const onImage = (e) => {
 
 // Validation
 const canSave = computed(() =>
-  form.value.title && form.value.product_code && form.value.category && form.value.regular_price
+  form.value.title && form.value.product_code && form.value.category  && form.purchased_price && form.value.regular_price
 );
 
 // Add category
@@ -172,6 +172,7 @@ const addCategory = async () => {
 // Submit form
 const submitForm = async () => {
   if (!canSave.value) return;
+
   const formData = new FormData();
   for (const key in form.value) {
     if (form.value[key] !== null && form.value[key] !== "") {
@@ -181,10 +182,13 @@ const submitForm = async () => {
 
   loading.value = true;
   try {
-    await api.post("products/", formData, {
+    const res = await api.post("products/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+
+    console.log("Product created:", res.data);
     alert("✅ Product added successfully!");
+
     form.value = {
       title: "",
       product_code: "",
@@ -194,13 +198,25 @@ const submitForm = async () => {
       purchased_price: "",
       regular_price: "",
       selling_price: "",
-      discount: "",   // reset
+      discount: "",
       stock: 0,
       image: null,
     };
   } catch (error) {
-    console.error("Error adding product", error.response?.data || error);
-    alert("❌ Failed to add product");
+    const status = error.response?.status;
+    const data = error.response?.data;
+
+    console.error("Error adding product", status, data);
+
+    if (data) {
+      // DRF validation error গুলো সুন্দর করে দেখাই
+      const messages = Object.entries(data)
+        .map(([field, msg]) => `${field}: ${Array.isArray(msg) ? msg.join(", ") : msg}`)
+        .join("\n");
+      alert("Error:\n" + messages);
+    } else {
+      alert("❌ Failed to add product (network/server error)");
+    }
   } finally {
     loading.value = false;
   }
