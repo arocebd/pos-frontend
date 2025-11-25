@@ -191,6 +191,7 @@ const submitForm = async () => {
       sku: "",
       barcode: "",
       category: "",
+      purchased_price: "",
       regular_price: "",
       selling_price: "",
       discount: "",   // reset
