@@ -168,12 +168,6 @@
 import { ref, computed } from 'vue'
 import api from '@/services/api.js'
 
-const api = api.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: false,
-  timeout: 20000,
-})
-
 const startDate = ref('')
 const endDate   = ref('')
 const reportType = ref('summary')
