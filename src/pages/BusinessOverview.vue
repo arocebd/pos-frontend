@@ -82,7 +82,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import api from '@/services/api.js'
 import Chart from 'chart.js/auto'
 import KpiCard from './KpiCard.vue' // Make sure this path is correct
 
@@ -101,12 +101,10 @@ const ieChart = ref(null)
 const profitChart = ref(null)
 let ieInstance = null
 let profitInstance = null
-
-const apiBase = 'http://127.0.0.1:8000/api'
-
+  
 async function fetchSummary() {
   try {
-    const { data } = await axios.get(`${apiBase}/business-overview/`, {
+    const { data } = await api.get(`${apiBase}/business-overview/`, {
       params: { 
         start_date: start_date.value, 
         end_date: end_date.value 
@@ -121,7 +119,7 @@ async function fetchSummary() {
 
 async function fetchTimeseries() {
   try {
-    const { data } = await axios.get(`${apiBase}/business-overview/timeseries/`, {
+    const { data } = await api.get(`${apiBase}/business-overview/timeseries/`, {
       params: { 
         start_date: start_date.value, 
         end_date: end_date.value 
