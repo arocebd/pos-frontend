@@ -166,11 +166,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import api from '@/services/api.js'
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
-  withCredentials: false,    // avoid preflight/CORS for simple GETs
+const api = api.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  withCredentials: false,
   timeout: 20000,
 })
 
@@ -237,7 +237,7 @@ async function generate() {
 
   loading.value = true
   try {
-    const res = await api.get('/api/sales-report/', {
+    const res = await api.get('/sales-report/', {
       params: {
         start_date: startDate.value,
         end_date: endDate.value,
@@ -259,7 +259,7 @@ function exportReport(fmt) {
     error.value = 'Please select start and end date.'
     return
   }
-  const url = new URL('/api/sales-report/', import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000')
+  const url = new URL('/sales-report/', import.meta.env.VITE_API_BASE_URL)
   url.searchParams.set('start_date', startDate.value)
   url.searchParams.set('end_date', endDate.value)
   url.searchParams.set('type', reportType.value)
