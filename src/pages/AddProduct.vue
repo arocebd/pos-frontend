@@ -105,7 +105,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import api from "@/api/api.js";
+import api from "@/services/api.js";
 
 const form = ref({
   title: "",
@@ -140,7 +140,7 @@ onMounted(loadCategories);
 
 // Generate barcode
 const generateBarcode = () => {
-  form.value.barcode = "BAR" + Math.floor(100000 + Math.random() * 900000);
+  form.value.barcode = Math.floor(100000 + Math.random() * 900000);
 };
 
 // Handle image upload
