@@ -107,6 +107,8 @@
 import { ref, onMounted, computed } from "vue";
 import api from "@/axios";
 
+const res = await api.get(ulr);
+
 const form = ref({
   title: "",
   product_code: "",
