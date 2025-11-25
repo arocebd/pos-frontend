@@ -105,7 +105,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import axios from "axios";
+import api from "@/api/api.js";
 
 const form = ref({
   title: "",
@@ -125,10 +125,6 @@ const categories = ref([]);
 const newCat = ref("");
 const addingCat = ref(false);
 const loading = ref(false);
-
-const api = axios.create({
-  baseURL: "https://163.227.239.93:8000/api",
-});
 
 // Load categories
 const loadCategories = async () => {
