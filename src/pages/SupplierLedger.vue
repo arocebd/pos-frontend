@@ -137,7 +137,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import axios from "../axios";
+import api from "@/services/api.js";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
 
@@ -188,7 +188,7 @@ function goBack() {
 // Data Fetching
 async function fetchLedger() {
   try {
-    const res = await axios.get(`/suppliers/${supplierId}/ledger/`);
+    const res = await api.get(`/suppliers/${supplierId}/ledger/`);
     info.value = { 
       name: res.data.supplier, 
       phone: res.data.phone, 
@@ -200,7 +200,7 @@ async function fetchLedger() {
       total_due: Number(res.data.total_due || 0),
     };
     ledger.value = res.data.ledger || [];
-    console.log("📊 Ledger data loaded:", ledger.value);
+    console.log("Ledger data loaded:", ledger.value);
   } catch (err) {
     console.error("❌ Failed to load ledger:", err?.response?.data || err);
     alert("Failed to load ledger data.");
@@ -227,7 +227,7 @@ async function savePayment() {
       return;
     }
 
-    await axios.post("/supplier-payments/", payload);
+    await api.post("/supplier-payments/", payload);
     alert("✅ Payment saved successfully!");
     showPay.value = false;
     pay.value = { amount: 0, payment_method: "cash", memo_no: "", remarks: "" };
@@ -266,7 +266,7 @@ async function deleteEntry(entry) {
       url = `/supplier-payments/${entry.id}/`;
     }
     
-    await axios.delete(url);
+    await api.delete(url);
     await fetchLedger();
     alert("🗑️ Record deleted successfully!");
   } catch (err) {
