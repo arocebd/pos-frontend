@@ -139,7 +139,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "../axios";
+import api from "@/services/api.js";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -155,7 +155,7 @@ const form = ref({
 
 async function fetchSuppliers() {
   try {
-    const res = await axios.get("/suppliers/");
+    const res = await api.get("/suppliers/");
     suppliers.value = res.data;
   } catch (err) {
     console.error("❌ Failed to load suppliers:", err);
@@ -170,7 +170,7 @@ async function addSupplier() {
   }
 
   try {
-    const res = await axios.post("/suppliers/", form.value);
+    const res = await api.post("/suppliers/", form.value);
     if (res.status === 201) {
       alert("✅ Supplier added successfully!");
       showAddModal.value = false;
