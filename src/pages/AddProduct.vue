@@ -105,9 +105,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import api from "@/axios";
-
-const res = await api.get(ulr);
+import api from "axios";
 
 const form = ref({
   title: "",
@@ -128,6 +126,8 @@ const newCat = ref("");
 const addingCat = ref(false);
 const loading = ref(false);
 
+const api = axios.create({ baseURL: "http://127.0.0.1:8000/api/" });
+
 // Load categories
 const loadCategories = async () => {
   try {
@@ -142,7 +142,7 @@ onMounted(loadCategories);
 
 // Generate barcode
 const generateBarcode = () => {
-  form.value.barcode = Math.floor(100000 + Math.random() * 900000);
+  form.value.barcode = Math.floor(100000 + Math.random() * 9000000);
 };
 
 // Handle image upload
