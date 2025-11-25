@@ -180,7 +180,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import api from "@/axios";
+import api from "@/services/api.js";
 
 const route = useRoute();
 const router = useRouter();
