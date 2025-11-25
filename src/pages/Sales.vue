@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import axios from "axios";
+import api from "@/services/api.js";
 import { ref, onMounted } from "vue";
 
 const sales = ref([]);
@@ -121,8 +121,8 @@ const products = ref([]);
 onMounted(async () => {
   try {
     const [salesRes, productsRes] = await Promise.all([
-      axios.get("http://127.0.0.1:8000/api/sales/"),
-      axios.get("http://127.0.0.1:8000/api/products/")
+      api.get("/sales/"),
+      api.get("/products/")
     ]);
     sales.value = salesRes.data;
     products.value = productsRes.data;
@@ -165,7 +165,7 @@ const calculateTotalPoints = () => {
 
 const viewInvoice = async (id) => {
   try {
-    const res = await axios.get(`http://127.0.0.1:8000/api/invoice/${id}/`);
+    const res = await api.get('/invoice/${id}/');
     selectedInvoice.value = res.data;
     console.log("Invoice loaded:", selectedInvoice.value);
   } catch (error) {
