@@ -72,7 +72,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/services/api.js";
 import { useRouter } from "vue-router";
 
 export default {
@@ -90,7 +90,7 @@ export default {
     const router = useRouter();
 
     const editProduct = (id) => {
-      router.push(`/edit-product/${id}`); // adjust route as per your router path
+      router.push('/edit-product/${id}'); // adjust route as per your router path
     };
 
     return { editProduct };
@@ -123,10 +123,10 @@ export default {
   },
   async created() {
     try {
-      const productRes = await axios.get("http://127.0.0.1:8000/api/products/");
+      const productRes = await api.get("/products/");
       this.products = productRes.data;
 
-      const categoryRes = await axios.get("http://127.0.0.1:8000/api/categories/");
+      const categoryRes = await api.get("/categories/");
       this.categories = categoryRes.data;
     } catch (err) {
       console.error("API Error", err);
