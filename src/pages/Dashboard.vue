@@ -113,7 +113,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "../axios";
+import axios from "@/services/api.js";
 import Chart from "chart.js/auto";
 
 // ----- State -----
@@ -157,7 +157,7 @@ function ymd(date) {
 }
 
 // ----- Fetch Dashboard Data -----
-// This expects backend endpoints. If you don't have them yet,
+// This expects backend endpoints.
 // see the "Backend contract" note after the component.
 async function loadDashboard() {
   loading.value = true;
