@@ -116,7 +116,7 @@
 </template>
 
 <script>
-import api from "@/services/api.js";
+import api from "@/axios";
 import { useRoute, useRouter } from "vue-router";
 
 export default {
