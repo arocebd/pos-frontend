@@ -137,7 +137,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import api from "@/services/api.js";
+import api from "@/axios";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
 
