@@ -74,7 +74,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import api from '@/services/api.js'
+import api from '@/axios'
 
 const route = useRoute()
 const invoice = ref({ items: [] })
