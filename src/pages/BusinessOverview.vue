@@ -82,7 +82,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import api from '@/axios'
+import api from "@/axios"
 import Chart from 'chart.js/auto'
 import KpiCard from './KpiCard.vue' // Make sure this path is correct
 
