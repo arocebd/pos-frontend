@@ -1,7 +1,7 @@
 <template>
   <div class="p-6 space-y-6">
     <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold">📈 Business Overview</h2>
+      <h2 class="text-2xl font-bold">Business Overview</h2>
       <div class="flex gap-2">
         <button @click="exportExcel" class="bg-emerald-600 text-white px-4 py-2 rounded hover:opacity-90">
           Export Excel
@@ -84,7 +84,7 @@
 import { ref, onMounted } from 'vue'
 import api from "@/axios"
 import Chart from 'chart.js/auto'
-import KpiCard from './KpiCard.vue' // Make sure this path is correct
+import KpiCard from './KpiCard.vue' 
 
 const start_date = ref('')
 const end_date = ref('')
@@ -283,7 +283,7 @@ onMounted(() => {
   // Set default dates (last 7 days)
   const today = new Date()
   const prior = new Date()
-  prior.setDate(today.getDate() - 30) // Last 30 days for better data
+  prior.setDate(today.getDate() - 30) 
   
   start_date.value = prior.toISOString().split('T')[0]
   end_date.value = today.toISOString().split('T')[0]
