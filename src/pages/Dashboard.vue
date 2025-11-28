@@ -113,8 +113,20 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router"
 import axios from "@/axios";
 import Chart from "chart.js/auto";
+
+const router = useRouter()
+
+function logout() {
+  console.log("[LOGOUT] clicked")
+  localStorage.removeItem("access")
+  localStorage.removeItem("refresh")
+  localStorage.removeItem("user")
+  delete axios.defaults.headers.common.Authorization
+  router.push("/login")
+}
 
 // ----- State -----
 const loading = ref(false);
