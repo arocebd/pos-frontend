@@ -166,7 +166,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import api from '@/services/api.js'
+import api from '@/axios'
 
 const startDate = ref('')
 const endDate   = ref('')
