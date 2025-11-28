@@ -257,8 +257,7 @@ export default {
     async updateProduct() {
       const id = this.$route.params.id
       const formData = new FormData()
-
-      // সব non-empty ফিল্ড পাঠানো
+      
       for (const key in this.form) {
         if (
           this.form[key] !== null &&
@@ -269,7 +268,6 @@ export default {
         }
       }
 
-      // যদি ইমেজ ম্যানুয়ালি রিমুভ করা হয়
       if (this.existingImage === "" && !this.form.image) {
         formData.append("image", "")
       }
