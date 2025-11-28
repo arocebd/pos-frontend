@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import api from "@/services/api.js";
+import api from "@/axios";
 import { ref, onMounted } from "vue";
 
 const sales = ref([]);
