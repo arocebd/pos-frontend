@@ -139,7 +139,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import api from "@/services/api.js";
+import api from "@/axios";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
