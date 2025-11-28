@@ -178,8 +178,10 @@ function handleLogin() {
 }
 
 function handleLogout() {
-  localStorage.removeItem('user')
-  localStorage.removeItem('token')
+  localStorage.removeItem("user")
+  localStorage.removeItem("access")
+  localStorage.removeItem("refresh")
+  localStorage.removeItem("token") 
   user.value = null
   dropdownOpen.value = false
   router.push('/login')
