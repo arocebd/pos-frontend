@@ -136,7 +136,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import api from "@/services/api.js";
+import api from "@/axios";
 
 const expenses = ref([]);
 const summary = ref({ grand_total: 0, by_category: [], by_day: [] });
