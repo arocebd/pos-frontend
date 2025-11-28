@@ -83,6 +83,16 @@
         />
       </div>
 
+      <!-- Barcode -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Barcode *</label>
+        <input
+          v-model="form.barcode"
+          type="text"
+          class="w-full border rounded-lg p-2"
+        />
+      </div>
+      
       <!-- Stock -->
       <div>
         <label class="block text-sm font-medium mb-1">Stock Quantity</label>
@@ -156,6 +166,7 @@ export default {
         title: "",
         product_code: "",
         sku: "",
+        barcode: "",
         category: "",
         purchased_price: "",
         regular_price: "",
@@ -190,6 +201,7 @@ export default {
           title: data.title,
           product_code: data.product_code,
           sku: data.sku,
+          barcode: data.barcode,
           category: data.category?.id || data.category,
           purchased_price: data.purchased_price ?? "",
           regular_price: data.regular_price,
