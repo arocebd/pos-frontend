@@ -70,26 +70,9 @@ export default {
     }
   },
 
-  created() {
-    this.checkExistingAuth()
-  },
+  // ❌ created() থাকবেনা – router guard এই কাজ করবে
 
   methods: {
-    async checkExistingAuth() {
-      const token = localStorage.getItem("access")
-      if (token) {
-        this.$router.replace("/dashboard")
-      }
-    },
-
-    logout() {
-      localStorage.removeItem("access")
-      localStorage.removeItem("refresh")
-      localStorage.removeItem("user")
-      delete axios.defaults.headers.common.Authorization
-      this.$router.push("/login")
-    },
-
     async login() {
       if (!this.username.trim() || !this.password.trim()) {
         this.error = "Please enter both username and password."
@@ -107,6 +90,7 @@ export default {
 
         if (response.data.access && response.data.refresh) {
           const { access, refresh } = response.data
+
           localStorage.setItem("access", access)
           localStorage.setItem("refresh", refresh)
           localStorage.setItem(
