@@ -53,6 +53,12 @@
 <script>
 import axios from "axios"
 
+// Better to use environment variables for baseURL
+const api = axios.create({
+  baseURL: process.env.VUE_APP_API_URL || "http://163.227.239.93/api",
+  timeout: 10000,
+})
+
 export default {
   name: "Login",
   data() {
@@ -65,39 +71,61 @@ export default {
     }
   },
   created() {
-    // If already logged in, go to dashboard
-    const token = localStorage.getItem("token")
-    if (token) {
-      this.$router.replace("/dashboard")
-    }
+    this.checkExistingAuth()
   },
   methods: {
+    async checkExistingAuth() {
+      const token = localStorage.getItem("access")
+      if (token) {
+        // Optional: Add token validation here
+        this.$router.replace("/dashboard")
+      }
+    },
+    
     async login() {
+      // Basic validation
+      if (!this.username.trim() || !this.password.trim()) {
+        this.error = "Please enter both username and password."
+        return
+      }
+
       this.error = null
       this.loading = true
+
       try {
-        const res = await axios.post("http://163.227.239.93/api/auth/login/", {
-          username: this.username,
+        const response = await api.post("/auth/login/", {
+          username: this.username.trim(),
           password: this.password,
         })
 
-        // Save tokens & username for later display
-        localStorage.setItem(
-        "user",
-        JSON.stringify({
-        username: res.data.username || this.username,
-        avatarUrl: res.data.avatar_url ||"", // optional
-        })
-      )   
+        if (response.data.access && response.data.refresh) {
+          const { access, refresh } = response.data
+          
+          localStorage.setItem("access", access)
+          localStorage.setItem("refresh", refresh)
+          localStorage.setItem("user", JSON.stringify({ 
+            username: this.username.trim() 
+          }))
 
-      localStorage.setItem("token", res.data.token)
-
-      this.$router.replace("/dashboard")
-      } catch (e) {
-        this.error =
-          e?.response?.status === 401
-            ? "Invalid username or password."
-            : "Login failed. Please try again."
+          this.$router.replace("/dashboard")
+        } else {
+          throw new Error("Invalid response format")
+        }
+        
+      } catch (error) {
+        console.error("Login error:", error)
+        
+        if (error.code === 'ECONNABORTED') {
+          this.error = "Request timeout. Please try again."
+        } else if (error.response?.status === 401) {
+          this.error = "Invalid username or password."
+        } else if (error.response?.status >= 500) {
+          this.error = "Server error. Please try again later."
+        } else if (error.request) {
+          this.error = "Network error. Please check your connection."
+        } else {
+          this.error = "Login failed. Please try again."
+        }
       } finally {
         this.loading = false
       }
