@@ -113,7 +113,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "@/services/api.js";
+import axios from "@/axios";
 import Chart from "chart.js/auto";
 
 // ----- State -----
