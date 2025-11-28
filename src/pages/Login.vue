@@ -51,7 +51,6 @@
 </template>
 
 <script>
-import router from "./router"
 import axios from "axios"
 
 const api = axios.create({
@@ -59,23 +58,8 @@ const api = axios.create({
   timeout: 10000,
 })
 
-router.beforeEach((to, from, next) => {
-  const publicPages = ["/login"]
-  const authRequired = !publicPages.includes(to.path)
-  const token = localStorage.getItem("access")
-
-  if (authRequired && !token) {
-    next("/login")
-  } else if (to.path === "/login" && token) {
-    next("/dashboard")
-  } else {
-    next()
-  }
-})
-
 export default {
   name: "Login",
-
   data() {
     return {
       username: "",
@@ -99,20 +83,14 @@ export default {
     },
 
     logout() {
-      // Clear all auth-related data
       localStorage.removeItem("access")
       localStorage.removeItem("refresh")
       localStorage.removeItem("user")
-
-      // Clear any axios default headers
       delete axios.defaults.headers.common.Authorization
-
-      // Redirect to login page
       this.$router.push("/login")
     },
 
     async login() {
-      // Basic validation
       if (!this.username.trim() || !this.password.trim()) {
         this.error = "Please enter both username and password."
         return
@@ -129,14 +107,11 @@ export default {
 
         if (response.data.access && response.data.refresh) {
           const { access, refresh } = response.data
-
           localStorage.setItem("access", access)
           localStorage.setItem("refresh", refresh)
           localStorage.setItem(
             "user",
-            JSON.stringify({
-              username: this.username.trim(),
-            }),
+            JSON.stringify({ username: this.username.trim() }),
           )
 
           this.$router.replace("/dashboard")
@@ -164,3 +139,4 @@ export default {
   },
 }
 </script>
+
