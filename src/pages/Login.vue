@@ -51,16 +51,31 @@
 </template>
 
 <script>
+import router from "./router"
 import axios from "axios"
 
-// Better to use environment variables for baseURL
 const api = axios.create({
-  baseURL: process.env.VUE_APP_API_URL || "http://163.227.239.93/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://163.227.239.93/api",
   timeout: 10000,
+})
+
+router.beforeEach((to, from, next) => {
+  const publicPages = ["/login"]
+  const authRequired = !publicPages.includes(to.path)
+  const token = localStorage.getItem("access")
+
+  if (authRequired && !token) {
+    next("/login")
+  } else if (to.path === "/login" && token) {
+    next("/dashboard")
+  } else {
+    next()
+  }
 })
 
 export default {
   name: "Login",
+
   data() {
     return {
       username: "",
@@ -70,18 +85,32 @@ export default {
       error: null,
     }
   },
+
   created() {
     this.checkExistingAuth()
   },
+
   methods: {
     async checkExistingAuth() {
       const token = localStorage.getItem("access")
       if (token) {
-        // Optional: Add token validation here
         this.$router.replace("/dashboard")
       }
     },
-    
+
+    logout() {
+      // Clear all auth-related data
+      localStorage.removeItem("access")
+      localStorage.removeItem("refresh")
+      localStorage.removeItem("user")
+
+      // Clear any axios default headers
+      delete axios.defaults.headers.common.Authorization
+
+      // Redirect to login page
+      this.$router.push("/login")
+    },
+
     async login() {
       // Basic validation
       if (!this.username.trim() || !this.password.trim()) {
@@ -100,22 +129,24 @@ export default {
 
         if (response.data.access && response.data.refresh) {
           const { access, refresh } = response.data
-          
+
           localStorage.setItem("access", access)
           localStorage.setItem("refresh", refresh)
-          localStorage.setItem("user", JSON.stringify({ 
-            username: this.username.trim() 
-          }))
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              username: this.username.trim(),
+            }),
+          )
 
           this.$router.replace("/dashboard")
         } else {
           throw new Error("Invalid response format")
         }
-        
       } catch (error) {
         console.error("Login error:", error)
-        
-        if (error.code === 'ECONNABORTED') {
+
+        if (error.code === "ECONNABORTED") {
           this.error = "Request timeout. Please try again."
         } else if (error.response?.status === 401) {
           this.error = "Invalid username or password."
