@@ -116,8 +116,7 @@
 </template>
 
 <script>
-import api from "@/axios";
-import { useRoute, useRouter } from "vue-router";
+import api from "@/axios"
 
 export default {
   name: "EditProduct",
@@ -138,106 +137,107 @@ export default {
       categories: [],
       previewUrl: "",
       existingImage: "",
-    };
+    }
   },
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-    return { route, router };
-  },
+
   async created() {
-    const id = this.route.params.id;
+    const id = this.$route.params.id
     try {
       // Load product
-      const productRes = await api.get('/products/${id}/');
-      const data = productRes.data;
+      const productRes = await api.get(`/products/${id}/`)
+      const data = productRes.data
 
-      // Ensure category is ID (not object)
       this.form = {
         title: data.title,
         product_code: data.product_code,
         sku: data.sku,
         category: data.category?.id || data.category,
+        purchased_price: data.purchased_price,     // ✅ এটা যোগ করা
         regular_price: data.regular_price,
         selling_price: data.selling_price,
         discount: data.discount,
         stock: data.stock,
         image: null,
-      };
-      this.existingImage = data.image;
+      }
+
+      this.existingImage = data.image || ""
+      this.previewUrl = data.image || ""
 
       // Load categories
-      const catRes = await api.get('/categories/');
-      this.categories = catRes.data;
+      const catRes = await api.get("/categories/")
+      this.categories = catRes.data
     } catch (err) {
-      console.error("Error loading product:", err);
-      alert("Failed to load product details!");
+      console.error("Error loading product:", err)
+      alert("Failed to load product details!")
     }
   },
+
   methods: {
     handleImage(event) {
-      const file = event.target.files[0];
+      const file = event.target.files[0]
       if (file) {
-        this.form.image = file;
-        this.previewUrl = URL.createObjectURL(file);
+        this.form.image = file
+        this.previewUrl = URL.createObjectURL(file)
+        this.existingImage = ""
       }
     },
+
     removeImage() {
-      this.form.image = null;
-      this.previewUrl = "";
-      this.existingImage = "";
+      this.form.image = null
+      this.previewUrl = ""
+      this.existingImage = ""
     },
 
     async deleteProduct() {
-  if (!confirm("⚠️ Are you sure you want to delete this product?")) return;
+      if (!confirm("⚠️ Are you sure you want to delete this product?")) return
 
-  const id = this.route.params.id;
+      const id = this.$route.params.id
 
-  try {
-    await api.delete('/products/${id}/');
-    alert("Product deleted successfully!");
-    this.router.push("/products");
-  } catch (err) {
-    console.error("Delete failed:", err.response?.data || err);
-    alert("❌ Failed to delete product!");
-  }
-},
+      try {
+        await api.delete(`/products/${id}/`)
+        alert("Product deleted successfully!")
+        this.$router.push("/products")
+      } catch (err) {
+        console.error("Delete failed:", err.response?.data || err)
+        alert("❌ Failed to delete product!")
+      }
+    },
 
     async updateProduct() {
-      const id = this.route.params.id;
-      const formData = new FormData();
+      const id = this.$route.params.id
+      const formData = new FormData()
 
+      // সব non-empty ফিল্ড পাঠাও
       for (const key in this.form) {
-        if (this.form[key] !== null && this.form[key] !== undefined && this.form[key] !== "")
-          formData.append(key, this.form[key]);
+        if (
+          this.form[key] !== null &&
+          this.form[key] !== undefined &&
+          this.form[key] !== ""
+        ) {
+          formData.append(key, this.form[key])
+        }
       }
 
-      // if image was removed manually, send blank
+      // যদি ইমেজ remove করা হয়
       if (this.existingImage === "" && !this.form.image) {
-        formData.append("image", "");
+        formData.append("image", "")
       }
 
       try {
-        await api.patch('/products/${id}/', formData, {
+        await api.patch(`/products/${id}/`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
-        });
-        alert("✅ Product updated successfully!");
-        this.router.push("/products");
+        })
+        alert("✅ Product updated successfully!")
+        this.$router.push("/products")
       } catch (err) {
-        console.error("Update failed:", err.response?.data || err);
-        alert("❌ Failed to update product!");
+        console.error("Update failed:", err.response?.data || err)
+        alert("❌ Failed to update product!")
       }
     },
+
     goBack() {
-      this.router.back();
+      this.$router.back()
     },
   },
-};
-</script>
-
-<style scoped>
-input,
-select {
-  background-color: #f9fafb;
 }
-</style>
+</script>
