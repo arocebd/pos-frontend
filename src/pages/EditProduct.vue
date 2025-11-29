@@ -116,8 +116,9 @@
 </template>
 
 <script>
-import api from "@/axios"; // <-- use your axios instance, not raw axios
+import api from "@/axios";
 import { useRoute, useRouter } from "vue-router";
+import { onMounted } from "vue"; 
 
 export default {
   name: "EditProduct",
@@ -148,14 +149,14 @@ export default {
     return { route, router };
   },
 
-  async created() {
-    const id = this.$route.params.id;   // <-- FIXED
+  onMounted(async () => {
+    const id = route.params.id;
 
     console.log("Loading product id:", id);
 
     try {
       // --------- LOAD PRODUCT ---------
-      const productRes = await api.get(`/products/${id}/`);  // <-- FIXED
+      const productRes = await api.get(`/products/${id}/`);
       const data = productRes.data;
 
       this.form = {
