@@ -115,140 +115,122 @@
   </div>
 </template>
 
-<script>
-import api from "@/axios";
+<script setup>
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { onMounted } from "vue"; 
+import api from "@/axios";
 
-export default {
-  name: "EditProduct",
+const route = useRoute();
+const router = useRouter();
 
-  data() {
-    return {
-      form: {
-        title: "",
-        product_code: "",
-        sku: "",
-        category: "",
-        purchased_price: "",
-        regular_price: "",
-        selling_price: "",
-        discount: "",
-        stock: "",
-        image: null,
-      },
-      categories: [],
-      previewUrl: "",
-      existingImage: "",
+const form = ref({
+  title: "",
+  product_code: "",
+  sku: "",
+  category: "",
+  purchased_price: "",
+  regular_price: "",
+  selling_price: "",
+  discount: "",
+  stock: "",
+  image: null,
+});
+
+const categories = ref([]);
+const previewUrl = ref("");
+const existingImage = ref("");
+
+// ------------------------ LOAD PRODUCT ------------------------
+onMounted(async () => {
+  const id = route.params.id;
+  console.log("Loading product ID:", id);
+
+  try {
+    const res = await api.get(`/products/${id}/`);
+    const data = res.data;
+
+    form.value = {
+      title: data.title,
+      product_code: data.product_code,
+      sku: data.sku,
+      category: data.category?.id || data.category,
+      purchased_price: data.purchased_price,
+      regular_price: data.regular_price,
+      selling_price: data.selling_price,
+      discount: data.discount,
+      stock: data.stock,
+      image: null,
     };
-  },
 
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-    return { route, router };
-  },
+    previewUrl.value = data.image;
+    existingImage.value = data.image;
 
-  onMounted(async () => {
-    const id = route.params.id;
+    const catRes = await api.get("/categories/");
+    categories.value = catRes.data;
 
-    console.log("Loading product id:", id);
+  } catch (err) {
+    console.error("Load error:", err);
+    alert("Failed to load product.");
+  }
+});
 
-    try {
-      // --------- LOAD PRODUCT ---------
-      const productRes = await api.get(`/products/${id}/`);
-      const data = productRes.data;
+// ------------------------ IMAGE HANDLING ------------------------
+function handleImage(event) {
+  const file = event.target.files[0];
+  if (file) {
+    form.value.image = file;
+    previewUrl.value = URL.createObjectURL(file);
+    existingImage.value = "";
+  }
+}
 
-      this.form = {
-        title: data.title,
-        product_code: data.product_code,
-        sku: data.sku,
-        category: data.category?.id || data.category,
-        purchased_price: data.purchased_price,
-        regular_price: data.regular_price,
-        selling_price: data.selling_price,
-        discount: data.discount,
-        stock: data.stock,
-        image: null,
-      };
+function removeImage() {
+  form.value.image = null;
+  previewUrl.value = "";
+  existingImage.value = "";
+}
 
-      this.existingImage = data.image || "";
-      this.previewUrl = data.image || "";
+// ------------------------ UPDATE PRODUCT ------------------------
+async function updateProduct() {
+  const id = route.params.id;
+  const formData = new FormData();
 
-      // --------- LOAD CATEGORIES ---------
-      const catRes = await api.get(`/categories/`);
-      this.categories = catRes.data;
-
-      console.log("Product Loaded:", this.form);
-
-    } catch (err) {
-      console.error("Error loading product:", err.response?.data || err);
-      alert("Failed to load product details!");
+  for (const key in form.value) {
+    if (form.value[key] !== "" && form.value[key] !== null) {
+      formData.append(key, form.value[key]);
     }
-  },
+  }
 
-  methods: {
-    handleImage(event) {
-      const file = event.target.files[0];
-      if (file) {
-        this.form.image = file;
-        this.previewUrl = URL.createObjectURL(file);
-        this.existingImage = "";
-      }
-    },
+  if (!form.value.image && !existingImage.value) {
+    formData.append("image", "");
+  }
 
-    removeImage() {
-      this.form.image = null;
-      this.previewUrl = "";
-      this.existingImage = "";
-    },
+  try {
+    await api.patch(`/products/${id}/`, formData);
+    alert("Product updated!");
+    router.push("/products");
+  } catch (err) {
+    console.error("Update failed:", err.response?.data || err);
+    alert("Failed to update product.");
+  }
+}
 
-    async deleteProduct() {
-      if (!confirm("⚠️ Are you sure you want to delete this product?")) return;
+// ------------------------ DELETE PRODUCT ------------------------
+async function deleteProduct() {
+  if (!confirm("Are you sure?")) return;
 
-      const id = this.$route.params.id;
+  const id = route.params.id;
+  try {
+    await api.delete(`/products/${id}/`);
+    alert("Product deleted!");
+    router.push("/products");
+  } catch (err) {
+    console.error("Delete failed:", err);
+    alert("Failed to delete product.");
+  }
+}
 
-      try {
-        await api.delete(`/products/${id}/`);
-        alert("Product deleted!");
-        this.$router.push("/products");
-      } catch (err) {
-        console.error("Delete failed:", err.response?.data || err);
-        alert("❌ Failed to delete product!");
-      }
-    },
-
-    async updateProduct() {
-      const id = this.$route.params.id;
-      const formData = new FormData();
-
-      for (const key in this.form) {
-        if (this.form[key] !== "" && this.form[key] !== null) {
-          formData.append(key, this.form[key]);
-        }
-      }
-
-      if (!this.form.image && !this.existingImage) {
-        formData.append("image", "");
-      }
-
-      try {
-        await api.patch(`/products/${id}/`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-
-        alert("Product updated successfully!");
-        this.$router.push("/products");
-
-      } catch (err) {
-        console.error("Update failed:", err.response?.data || err);
-        alert("❌ Failed to update product!");
-      }
-    },
-
-    goBack() {
-      this.$router.back();
-    },
-  },
-};
+function goBack() {
+  router.back();
+}
 </script>
