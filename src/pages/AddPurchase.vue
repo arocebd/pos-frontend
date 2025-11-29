@@ -180,7 +180,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import api from "@/axios";
+import axios from "../axios";
 
 const route = useRoute();
 const router = useRouter();
@@ -227,7 +227,7 @@ async function retryLoad() {
 
 async function fetchSuppliers() {
   try {
-    const res = await api.get("/suppliers/");
+    const res = await axios.get("/suppliers/");
     suppliers.value = res.data.results || res.data;
   } catch (err) {
     console.error("❌ Failed to fetch suppliers:", err);
@@ -243,7 +243,7 @@ async function loadPurchaseData() {
   try {
     console.log("🔄 Fetching purchase data for ID:", purchaseId.value);
     
-    const response = await api.get(`/purchases/${purchaseId.value}/`);
+    const response = await axios.get(`/purchases/${purchaseId.value}/`);
     const purchase = response.data;
     console.log("📦 Purchase data received:", purchase);
     
@@ -282,7 +282,7 @@ async function loadPurchaseData() {
 async function searchProducts() {
   if (!search.value.trim()) { suggestions.value = []; return; }
   try {
-    const res = await api.get(`/products/?search=${encodeURIComponent(search.value)}`);
+    const res = await axios.get(`/products/?search=${encodeURIComponent(search.value)}`);
     suggestions.value = res.data.results || res.data;
   } catch (err) {
     console.error("❌ Search failed:", err);
@@ -292,7 +292,7 @@ async function searchProducts() {
 async function addByCode() {
   if (!search.value.trim()) return;
   try {
-    const res = await api.get(`/products/?search=${encodeURIComponent(search.value)}`);
+    const res = await axios.get(`/products/?search=${encodeURIComponent(search.value)}`);
     const p = (res.data.results || res.data)[0];
     if (p) addItem(p);
     search.value = "";
