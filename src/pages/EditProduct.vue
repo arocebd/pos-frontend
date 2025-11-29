@@ -116,11 +116,12 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/axios"; // <-- use your axios instance, not raw axios
 import { useRoute, useRouter } from "vue-router";
 
 export default {
   name: "EditProduct",
+
   data() {
     return {
       form: {
@@ -140,48 +141,61 @@ export default {
       existingImage: "",
     };
   },
+
   setup() {
     const route = useRoute();
     const router = useRouter();
     return { route, router };
   },
+
   async created() {
-    const id = this.route.params.id;
+    const id = this.$route.params.id;   // <-- FIXED
+
+    console.log("Loading product id:", id);
+
     try {
-      // Load product
-      const productRes = await axios.get(`/products/${id}/`);
+      // --------- LOAD PRODUCT ---------
+      const productRes = await api.get(`/products/${id}/`);  // <-- FIXED
       const data = productRes.data;
 
-      // Ensure category is ID (not object)
       this.form = {
         title: data.title,
         product_code: data.product_code,
         sku: data.sku,
         category: data.category?.id || data.category,
+        purchased_price: data.purchased_price,
         regular_price: data.regular_price,
         selling_price: data.selling_price,
         discount: data.discount,
         stock: data.stock,
         image: null,
       };
-      this.existingImage = data.image;
 
-      // Load categories
-      const catRes = await axios.get(`/categories/`);
+      this.existingImage = data.image || "";
+      this.previewUrl = data.image || "";
+
+      // --------- LOAD CATEGORIES ---------
+      const catRes = await api.get(`/categories/`);
       this.categories = catRes.data;
+
+      console.log("Product Loaded:", this.form);
+
     } catch (err) {
-      console.error("Error loading product:", err);
+      console.error("Error loading product:", err.response?.data || err);
       alert("Failed to load product details!");
     }
   },
+
   methods: {
     handleImage(event) {
       const file = event.target.files[0];
       if (file) {
         this.form.image = file;
         this.previewUrl = URL.createObjectURL(file);
+        this.existingImage = "";
       }
     },
+
     removeImage() {
       this.form.image = null;
       this.previewUrl = "";
@@ -189,55 +203,51 @@ export default {
     },
 
     async deleteProduct() {
-  if (!confirm("⚠️ Are you sure you want to delete this product?")) return;
+      if (!confirm("⚠️ Are you sure you want to delete this product?")) return;
 
-  const id = this.route.params.id;
+      const id = this.$route.params.id;
 
-  try {
-    await axios.delete(`/products/${id}/`);
-    alert("🗑️ Product deleted successfully!");
-    this.router.push("/products");
-  } catch (err) {
-    console.error("Delete failed:", err.response?.data || err);
-    alert("❌ Failed to delete product!");
-  }
-},
+      try {
+        await api.delete(`/products/${id}/`);
+        alert("Product deleted!");
+        this.$router.push("/products");
+      } catch (err) {
+        console.error("Delete failed:", err.response?.data || err);
+        alert("❌ Failed to delete product!");
+      }
+    },
 
     async updateProduct() {
-      const id = this.route.params.id;
+      const id = this.$route.params.id;
       const formData = new FormData();
 
       for (const key in this.form) {
-        if (this.form[key] !== null && this.form[key] !== undefined && this.form[key] !== "")
+        if (this.form[key] !== "" && this.form[key] !== null) {
           formData.append(key, this.form[key]);
+        }
       }
 
-      // if image was removed manually, send blank
-      if (this.existingImage === "" && !this.form.image) {
+      if (!this.form.image && !this.existingImage) {
         formData.append("image", "");
       }
 
-    try {
-      await axios.patch(`/products/${id}/`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-      });
-      alert("✅ Product updated successfully!");
-      this.$router.push("/products");
-    } catch (err) {
-      console.error("Update failed:", err.response?.data || err);
-      alert("❌ Failed to update product!");
-    }  
-  },
+      try {
+        await api.patch(`/products/${id}/`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        alert("Product updated successfully!");
+        this.$router.push("/products");
+
+      } catch (err) {
+        console.error("Update failed:", err.response?.data || err);
+        alert("❌ Failed to update product!");
+      }
+    },
+
     goBack() {
-      this.router.back();
+      this.$router.back();
     },
   },
 };
 </script>
-
-<style scoped>
-input,
-select {
-  background-color: #f9fafb;
-}
-</style>
