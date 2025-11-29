@@ -90,7 +90,7 @@ export default {
     const router = useRouter();
 
     const editProduct = (id) => {
-      router.push('/edit-product/${id}'); // adjust route as per your router path
+      router.push(`/edit-product/${id}`); // adjust route as per your router path
     };
 
     return { editProduct };
