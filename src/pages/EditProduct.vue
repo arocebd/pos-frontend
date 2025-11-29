@@ -190,28 +190,37 @@ function removeImage() {
   existingImage.value = "";
 }
 
-// ------------------------ UPDATE PRODUCT ------------------------
-async function updateProduct() {
-  const id = route.params.id;
+async updateProduct() {
+  const id = this.$route.params.id;
   const formData = new FormData();
 
-  for (const key in form.value) {
-    if (form.value[key] !== "" && form.value[key] !== null) {
-      formData.append(key, form.value[key]);
+  // Append all other fields
+  for (const key in this.form) {
+    if (key !== "image" && this.form[key] !== "" && this.form[key] !== null) {
+      formData.append(key, this.form[key]);
     }
   }
 
-  if (!form.value.image && !existingImage.value) {
-    formData.append("image", "");
+  // ---- IMAGE HANDLING FIX ----
+  if (this.form.image) {
+    formData.append("image", this.form.image); // user selected new file
+  } 
+  else if (!this.existingImage) {
+    formData.append("image", ""); // user removed image
   }
+  // else → keep old image (send nothing)
 
   try {
-    await api.patch(`/products/${id}/`, formData);
-    alert("Product updated!");
-    router.push("/products");
+    await api.patch(`/products/${id}/`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    alert("Product updated successfully!");
+    this.$router.push("/products");
+
   } catch (err) {
     console.error("Update failed:", err.response?.data || err);
-    alert("Failed to update product.");
+    alert("❌ Failed to update product.");
   }
 }
 
