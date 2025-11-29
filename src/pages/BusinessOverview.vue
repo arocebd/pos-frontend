@@ -102,7 +102,7 @@ const profitChart = ref(null)
 let ieInstance = null
 let profitInstance = null
 
-const apiBase = 'http://127.0.0.1:8000/api'
+const apiBase = 'http://163.227.239.93/api'
 
 async function fetchSummary() {
   try {
