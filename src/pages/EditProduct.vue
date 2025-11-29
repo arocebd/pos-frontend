@@ -116,130 +116,163 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "@/axios";
 
 const route = useRoute();
 const router = useRouter();
 
+// Reactive object to store form data
 const form = ref({
-  title: "",
-  product_code: "",
-  sku: "",
-  category: "",
-  purchased_price: "",
-  regular_price: "",
-  selling_price: "",
-  discount: "",
-  stock: "",
-  image: null,
+    title: "",
+    product_code: "",
+    sku: "",
+    category: "",
+    purchased_price: "",
+    regular_price: "",
+    selling_price: "",
+    discount: "",
+    stock: "",
+    image: null, // Will hold the File object for new uploads
 });
+
+// Reactive object to store specific backend validation errors
+const errors = reactive({});
 
 const categories = ref([]);
 const previewUrl = ref("");
-const existingImage = ref("");
+const existingImage = ref(""); // Holds the URL of the image loaded from the server
 
 // ------------------------ LOAD PRODUCT ------------------------
 onMounted(async () => {
-  const id = route.params.id;
-  console.log("Loading product ID:", id);
+    const id = route.params.id;
+    console.log("Loading product ID:", id);
 
-  try {
-    const res = await api.get(`/products/${id}/`);
-    const data = res.data;
+    try {
+        const res = await api.get(`/products/${id}/`);
+        const data = res.data;
 
-    form.value = {
-      title: data.title,
-      product_code: data.product_code,
-      sku: data.sku,
-      category: data.category?.id || data.category,
-      purchased_price: data.purchased_price,
-      regular_price: data.regular_price,
-      selling_price: data.selling_price,
-      discount: data.discount,
-      stock: data.stock,
-      image: null,
-    };
+        form.value = {
+            title: data.title,
+            product_code: data.product_code,
+            sku: data.sku,
+            // Use optional chaining for category, defaulting to the ID if structure is flat
+            category: data.category?.id || data.category, 
+            purchased_price: data.purchased_price,
+            regular_price: data.regular_price,
+            selling_price: data.selling_price,
+            discount: data.discount,
+            stock: data.stock,
+            image: null, // Ensure new image upload starts clean
+        };
 
-    previewUrl.value = data.image;
-    existingImage.value = data.image;
+        previewUrl.value = data.image;
+        existingImage.value = data.image;
 
-    const catRes = await api.get("/categories/");
-    categories.value = catRes.data;
+        const catRes = await api.get("/categories/");
+        categories.value = catRes.data;
 
-  } catch (err) {
-    console.error("Load error:", err);
-    alert("Failed to load product.");
-  }
+    } catch (err) {
+        console.error("Load error:", err);
+        alert("Failed to load product.");
+    }
 });
 
 // ------------------------ IMAGE HANDLING ------------------------
 function handleImage(event) {
-  const file = event.target.files[0];
-  if (file) {
-    form.value.image = file;
-    previewUrl.value = URL.createObjectURL(file);
-    existingImage.value = "";
-  }
+    const file = event.target.files[0];
+    if (file) {
+        // Clear any existing image error before setting a new file
+        if (errors.image) delete errors.image;
+        
+        form.value.image = file;
+        previewUrl.value = URL.createObjectURL(file);
+        existingImage.value = "";
+    }
 }
 
 function removeImage() {
-  form.value.image = null;
-  previewUrl.value = "";
-  existingImage.value = "";
+    form.value.image = null;
+    previewUrl.value = "";
+    existingImage.value = "";
 }
 
-async updateProduct() {
-  const id = this.$route.params.id;
-  const formData = new FormData();
+// ------------------------ UPDATE PRODUCT ------------------------
+async function updateProduct() {
+    const id = route.params.id;
+    const formData = new FormData();
+    
+    // Clear previous errors before submitting
+    Object.keys(errors).forEach(key => delete errors[key]);
 
-  // Append all other fields
-  for (const key in this.form) {
-    if (key !== "image" && this.form[key] !== "" && this.form[key] !== null) {
-      formData.append(key, this.form[key]);
+    // Append all fields from the form ref's value
+    for (const key in form.value) {
+        // Skip null/empty fields unless it's the image (handled separately)
+        if (key !== "image" && form.value[key] !== "" && form.value[key] !== null) {
+            formData.append(key, form.value[key]);
+        }
     }
-  }
 
-  // ---- IMAGE HANDLING FIX ----
-  if (this.form.image) {
-    formData.append("image", this.form.image); // user selected new file
-  } 
-  else if (!this.existingImage) {
-    formData.append("image", ""); // user removed image
-  }
-  // else → keep old image (send nothing)
+    // --- IMAGE HANDLING LOGIC ---
+    if (form.value.image) {
+        // Case 1: New file selected
+        formData.append("image", form.value.image); 
+    } else if (!existingImage.value) {
+        // Case 2: User explicitly removed the existing image
+        formData.append("image", ""); 
+    }
+    // Case 3: existingImage.value is present and form.value.image is null (default) 
+    //         --> do nothing, which tells the backend to keep the existing image.
 
-  try {
-    await api.patch(`/products/${id}/`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    try {
+        await api.patch(`/products/${id}/`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
 
-    alert("Product updated successfully!");
-    this.$router.push("/products");
+        alert("Product updated successfully!");
+        router.push("/products");
 
-  } catch (err) {
-    console.error("Update failed:", err.response?.data || err);
-    alert("❌ Failed to update product.");
-  }
+    } catch (err) {
+        console.error("Update failed:", err.response?.data || err);
+
+        // --- ENHANCED ERROR PARSING ---
+        if (err.response && err.response.status === 422 && err.response.data.errors) {
+            const backendErrors = err.response.data.errors;
+
+            // Map backend errors to the local reactive errors object
+            for (const key in backendErrors) {
+                // Ensure the form object key exists to prevent setting errors for unexpected fields
+                if (form.value.hasOwnProperty(key)) {
+                    // Take the first error message for that field
+                    errors[key] = backendErrors[key][0];
+                }
+            }
+            alert(`Update failed: Please check the form for errors.`); 
+
+        } else {
+            // Handle network errors, 500 server errors, etc.
+            alert("❌ Failed to update product. A server or network error occurred.");
+        }
+    }
 }
 
 // ------------------------ DELETE PRODUCT ------------------------
 async function deleteProduct() {
-  if (!confirm("Are you sure?")) return;
+    if (!confirm("Are you sure?")) return;
 
-  const id = route.params.id;
-  try {
-    await api.delete(`/products/${id}/`);
-    alert("Product deleted!");
-    router.push("/products");
-  } catch (err) {
-    console.error("Delete failed:", err);
-    alert("Failed to delete product.");
-  }
+    const id = route.params.id;
+    try {
+        await api.delete(`/products/${id}/`);
+        alert("Product deleted!");
+        router.push("/products");
+    } catch (err) {
+        console.error("Delete failed:", err);
+        alert("Failed to delete product.");
+    }
 }
 
 function goBack() {
-  router.back();
+    router.back();
 }
 </script>
