@@ -12,12 +12,7 @@
       <!-- Product Code -->
       <div>
         <label class="block text-sm font-medium mb-1">Product Code *</label>
-        <input
-          v-model="form.product_code"
-          type="text"
-          class="w-full border rounded-lg p-2"
-          required
-        />
+        <input v-model="form.product_code" type="text" class="w-full border rounded-lg p-2" required />
       </div>
 
       <!-- SKU -->
@@ -30,69 +25,34 @@
       <div>
         <label class="block text-sm font-medium mb-1">Category</label>
         <select v-model="form.category" class="w-full border rounded-lg p-2">
-          <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-            {{ cat.name }}
-          </option>
+          <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
       </div>
 
-      <!-- Purchased Price -->
+      <!-- Purchased Price ---->
       <div>
         <label class="block text-sm font-medium mb-1">Purchased Price *</label>
-        <input
-          v-model="form.purchased_price"
-          type="number"
-          step="0.01"
-          class="w-full border rounded-lg p-2"
-          required
-        />
+        <input v-model="form.purchased_price" type="number" step="0.01" class="w-full border rounded-lg p-2" required/>
       </div>
 
       <!-- Regular Price -->
       <div>
         <label class="block text-sm font-medium mb-1">Regular Price *</label>
-        <input
-          v-model="form.regular_price"
-          type="number"
-          step="0.01"
-          class="w-full border rounded-lg p-2"
-          required
-        />
+        <input v-model="form.regular_price" type="number" step="0.01" class="w-full border rounded-lg p-2" required />
       </div>
 
       <!-- Selling Price -->
       <div>
         <label class="block text-sm font-medium mb-1">Selling Price *</label>
-        <input
-          v-model="form.selling_price"
-          type="number"
-          step="0.01"
-          class="w-full border rounded-lg p-2"
-          required
-        />
+        <input v-model="form.selling_price" type="number" step="0.01" class="w-full border rounded-lg p-2" required />
       </div>
 
       <!-- Discount -->
       <div>
         <label class="block text-sm font-medium mb-1">Discount</label>
-        <input
-          v-model="form.discount"
-          type="number"
-          step="0.01"
-          class="w-full border rounded-lg p-2"
-        />
+        <input v-model="form.discount" type="number" step="0.01" class="w-full border rounded-lg p-2" />
       </div>
 
-      <!-- Barcode -->
-      <div>
-        <label class="block text-sm font-medium mb-1">Barcode *</label>
-        <input
-          v-model="form.barcode"
-          type="text"
-          class="w-full border rounded-lg p-2"
-        />
-      </div>
-      
       <!-- Stock -->
       <div>
         <label class="block text-sm font-medium mb-1">Stock Quantity</label>
@@ -104,9 +64,9 @@
         <label class="block text-sm font-medium mb-1">Product Image</label>
         <input type="file" @change="handleImage" class="w-full border rounded-lg p-2" />
 
-        <div v-if="previewUrl || existingImage" class="relative mt-3 inline-block">
+        <div v-if="previewUrl || form.image" class="relative mt-3 inline-block">
           <img
-            :src="previewUrl || existingImage"
+            :src="previewUrl || form.image"
             alt="Preview"
             class="h-40 rounded-lg object-cover border"
           />
@@ -124,39 +84,40 @@
 
       <!-- Buttons -->
       <div class="md:col-span-2 flex justify-between mt-6">
-        <button
-          type="button"
-          @click="goBack"
-          class="bg-gray-500 text-white rounded-lg px-6 py-2 hover:bg-gray-600"
-        >
-          Back
+  <button
+    type="button"
+    @click="goBack"
+    class="bg-gray-500 text-white rounded-lg px-6 py-2 hover:bg-gray-600"
+  >
+    Back
+  </button>
+
+  <div class="flex gap-2">
+    <!-- ✅ Delete Button -->
+    <button
+      type="button"
+      @click="deleteProduct"
+      class="bg-red-600 text-white rounded-lg px-6 py-2 hover:bg-red-700"
+    >
+      Delete Product
+    </button>
+
+    <!-- Update Button -->
+    <button
+      type="submit"
+      class="bg-green-600 text-white rounded-lg px-6 py-2 hover:bg-green-700">
+        Update Product
         </button>
-
-        <div class="flex gap-2">
-          <!-- Delete Button -->
-          <button
-            type="button"
-            @click="deleteProduct"
-            class="bg-red-600 text-white rounded-lg px-6 py-2 hover:bg-red-700"
-          >
-            Delete Product
-          </button>
-
-          <!-- Update Button -->
-          <button
-            type="submit"
-            class="bg-green-600 text-white rounded-lg px-6 py-2 hover:bg-green-700"
-          >
-            Update Product
-          </button>
-        </div>
-      </div>
+    </div>
+</div>
+      
     </form>
   </div>
 </template>
 
 <script>
-import api from "@/axios"
+import axios from "axios";
+import { useRoute, useRouter } from "vue-router";
 
 export default {
   name: "EditProduct",
@@ -166,7 +127,6 @@ export default {
         title: "",
         product_code: "",
         sku: "",
-        barcode: "",
         category: "",
         purchased_price: "",
         regular_price: "",
@@ -178,118 +138,101 @@ export default {
       categories: [],
       previewUrl: "",
       existingImage: "",
+    };
+  },
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    return { route, router };
+  },
+  async created() {
+    const id = this.route.params.id;
+    try {
+      // Load product
+      const productRes = await axios.get(`http://127.0.0.1:8000/api/products/${id}/`);
+      const data = productRes.data;
+
+      // Ensure category is ID (not object)
+      this.form = {
+        title: data.title,
+        product_code: data.product_code,
+        sku: data.sku,
+        category: data.category?.id || data.category,
+        regular_price: data.regular_price,
+        selling_price: data.selling_price,
+        discount: data.discount,
+        stock: data.stock,
+        image: null,
+      };
+      this.existingImage = data.image;
+
+      // Load categories
+      const catRes = await axios.get("http://127.0.0.1:8000/api/categories/");
+      this.categories = catRes.data;
+    } catch (err) {
+      console.error("Error loading product:", err);
+      alert("Failed to load product details!");
     }
   },
-
-  created() {
-    this.loadProduct()
-  },
-
   methods: {
-    async loadProduct() {
-      const id = this.$route.params.id
-      console.log("[EditProduct] loading product id:", id)
-
-      try {
-        // Load product details
-        const productRes = await api.get(`/products/${id}/`)
-        console.log("[EditProduct] productRes:", productRes.data)
-
-        const data = productRes.data
-
-        this.form = {
-          title: data.title,
-          product_code: data.product_code,
-          sku: data.sku,
-          barcode: data.barcode,
-          category: data.category?.id || data.category,
-          purchased_price: data.purchased_price ?? "",
-          regular_price: data.regular_price,
-          selling_price: data.selling_price,
-          discount: data.discount,
-          stock: data.stock,
-          image: null,
-        }
-
-        this.existingImage = data.image || ""
-        this.previewUrl = data.image || ""
-
-        // Load categories
-        const catRes = await api.get("/categories/")
-        console.log("[EditProduct] categories:", catRes.data)
-        this.categories = catRes.data
-      } catch (err) {
-        console.error("Error loading product:", err.response?.data || err)
-        alert("Failed to load product details!")
-      }
-    },
-
     handleImage(event) {
-      const file = event.target.files[0]
+      const file = event.target.files[0];
       if (file) {
-        this.form.image = file
-        this.previewUrl = URL.createObjectURL(file)
-        this.existingImage = ""
+        this.form.image = file;
+        this.previewUrl = URL.createObjectURL(file);
       }
     },
-
     removeImage() {
-      this.form.image = null
-      this.previewUrl = ""
-      this.existingImage = ""
+      this.form.image = null;
+      this.previewUrl = "";
+      this.existingImage = "";
     },
 
     async deleteProduct() {
-      if (!confirm("⚠️ Are you sure you want to delete this product?")) return
+  if (!confirm("⚠️ Are you sure you want to delete this product?")) return;
 
-      const id = this.$route.params.id
+  const id = this.route.params.id;
 
-      try {
-        await api.delete(`/products/${id}/`)
-        alert("Product deleted successfully!")
-        this.$router.push("/products")
-      } catch (err) {
-        console.error("Delete failed:", err.response?.data || err)
-        alert("❌ Failed to delete product!")
-      }
-    },
+  try {
+    await axios.delete(`http://127.0.0.1:8000/api/products/${id}/`);
+    alert("🗑️ Product deleted successfully!");
+    this.router.push("/products");
+  } catch (err) {
+    console.error("Delete failed:", err.response?.data || err);
+    alert("❌ Failed to delete product!");
+  }
+},
 
     async updateProduct() {
-      const id = this.$route.params.id
-      const formData = new FormData()
-      
+      const id = this.route.params.id;
+      const formData = new FormData();
+
       for (const key in this.form) {
-        if (
-          this.form[key] !== null &&
-          this.form[key] !== undefined &&
-          this.form[key] !== ""
-        ) {
-          formData.append(key, this.form[key])
-        }
+        if (this.form[key] !== null && this.form[key] !== undefined && this.form[key] !== "")
+          formData.append(key, this.form[key]);
       }
 
+      // if image was removed manually, send blank
       if (this.existingImage === "" && !this.form.image) {
-        formData.append("image", "")
+        formData.append("image", "");
       }
 
       try {
-        const res = await api.patch(`/products/${id}/`, formData, {
+        await axios.patch(`http://127.0.0.1:8000/api/products/${id}/`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
-        })
-        console.log("[EditProduct] update response:", res.data)
-        alert("✅ Product updated successfully!")
-        this.$router.push("/products")
+        });
+        alert("✅ Product updated successfully!");
+        this.router.push("/products");
       } catch (err) {
-        console.error("Update failed:", err.response?.data || err)
-        alert("❌ Failed to update product!")
+        console.error("Update failed:", err.response?.data || err);
+        alert("❌ Failed to update product!");
       }
     },
-
     goBack() {
-      this.$router.back()
+      this.router.back();
     },
   },
-}
+};
 </script>
 
 <style scoped>
