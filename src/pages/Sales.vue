@@ -35,7 +35,7 @@
       <div class="bg-white p-6 rounded-lg w-[400px] shadow-lg">
         <!-- Preview of invoice -->
         <div class="text-center mb-4 border-b pb-2">
-          <h2 class="text-xl font-bold">🏪 Al Zabeer POS</h2>
+          <h2 class="text-xl font-bold">🏪 {{ shop_name }}</h2>
           <p class="text-sm">Invoice: #{{ selectedInvoice.id }}</p>
           <p class="text-sm">Date: {{ formatDate(selectedInvoice.date) }}</p>
           <p class="text-sm">Customer: {{ selectedInvoice.customer?.name || 'Walk-in' }}</p>
@@ -111,33 +111,56 @@
 </template>
 
 <script setup>
-import axios from "axios";
 import { ref, onMounted } from "vue";
+import axios from "@/axios";
+
+// Reactive state
+const shop_name = ref('');
+const location = ref('');
+const phone = ref('');
+const email_or_link = ref('');
 
 const sales = ref([]);
 const selectedInvoice = ref(null);
 const products = ref([]);
 
+// On mount: load sales, products, and shop info
 onMounted(async () => {
   try {
     const [salesRes, productsRes] = await Promise.all([
-      axios.get("http://127.0.0.1:8000/api/sales/"),
-      axios.get("http://127.0.0.1:8000/api/products/")
+      axios.get("sales/"),
+      axios.get("products/")
     ]);
     sales.value = salesRes.data;
     products.value = productsRes.data;
   } catch (error) {
     console.error("Error loading data:", error);
   }
+
+  try {
+    const shop = JSON.parse(localStorage.getItem('shop') || '{}');
+    shop_name.value = shop.shop_name || 'POS';
+    location.value = shop.location || '';
+    phone.value = shop.phone || '';
+    email_or_link.value = shop.email_or_link || '';
+  } catch (e) {
+    console.warn("Invalid shop data in localStorage");
+  }
 });
 
+// Formatting
 const formatDate = (d) => new Date(d).toLocaleString();
 
-// Safe number formatting function
 const formatNumber = (value) => {
   if (value === null || value === undefined) return '0.00';
   const num = typeof value === 'string' ? parseFloat(value) : value;
   return isNaN(num) ? '0.00' : num.toFixed(2);
+};
+
+const safeNumber = (value) => {
+  if (value === null || value === undefined) return 0;
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return isNaN(num) ? 0 : num;
 };
 
 const getProductName = (productId) => {
@@ -145,27 +168,25 @@ const getProductName = (productId) => {
   return product ? product.title : 'Unknown Product';
 };
 
-// Calculate points earned (1 point per 100৳ spent)
+// Points calculation
 const calculatePointsEarned = () => {
   if (!selectedInvoice.value) return 0;
   const total = safeNumber(selectedInvoice.value.total);
   return Math.floor(total / 100);
 };
 
-// Calculate total points after transaction
 const calculateTotalPoints = () => {
   if (!selectedInvoice.value || !selectedInvoice.value.customer) return 0;
-  
   const currentPoints = safeNumber(selectedInvoice.value.customer.points || 0);
   const pointsEarned = calculatePointsEarned();
   const pointsRedeemed = safeNumber(selectedInvoice.value.redeem_points || 0);
-  
   return currentPoints + pointsEarned - pointsRedeemed;
 };
 
+// Load invoice by ID
 const viewInvoice = async (id) => {
   try {
-    const res = await axios.get(`http://127.0.0.1:8000/api/invoice/${id}/`);
+    const res = await axios.get(`/invoice/${id}/`);
     selectedInvoice.value = res.data;
     console.log("Invoice loaded:", selectedInvoice.value);
   } catch (error) {
@@ -174,16 +195,37 @@ const viewInvoice = async (id) => {
   }
 };
 
+// Print receipt
 const printReceipt = () => {
-  console.log("Print button clicked");
-  
   if (!selectedInvoice.value) {
     alert("No invoice selected");
     return;
   }
 
+  const currentPoints = safeNumber(selectedInvoice.value.customer?.points || 0);
+  const pointsEarned = calculatePointsEarned();
+  const pointsRedeemed = safeNumber(selectedInvoice.value.redeem_points || 0);
+  const totalPoints = calculateTotalPoints();
+
+  const shopInfo = {
+    shop_name: shop_name.value,
+    location: location.value,
+    phone: phone.value,
+    email_or_link: email_or_link.value,
+  };
+
+  const receiptContent = generateReceiptContent(
+    selectedInvoice.value,
+    products.value,
+    currentPoints,
+    pointsEarned,
+    pointsRedeemed,
+    totalPoints,
+    shopInfo
+  );
+
+  // Create a hidden iframe and print
   try {
-    // Create a hidden iframe for printing
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -194,49 +236,29 @@ const printReceipt = () => {
     document.body.appendChild(iframe);
 
     const iframeDoc = iframe.contentWindow.document;
-
-    // Generate receipt content
-    const receiptContent = generateReceiptContent();
-
     iframeDoc.open();
     iframeDoc.write(receiptContent);
     iframeDoc.close();
 
-    // Wait for iframe to load then print
-    iframe.onload = function() {
+    iframe.onload = function () {
       setTimeout(() => {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-        
-        // Remove iframe after printing
         setTimeout(() => {
           document.body.removeChild(iframe);
         }, 1000);
       }, 500);
     };
-
   } catch (error) {
     console.error("Print error:", error);
     alert("Print failed: " + error.message);
   }
 };
 
-// Safe number conversion function
-const safeNumber = (value) => {
-  if (value === null || value === undefined) return 0;
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  return isNaN(num) ? 0 : num;
-};
+// Generate receipt HTML
+const generateReceiptContent = (invoice, products, currentPoints, pointsEarned, pointsRedeemed, totalPoints, shopInfo) => {
+  const { shop_name, location, phone, email_or_link } = shopInfo;
 
-const generateReceiptContent = () => {
-  const invoice = selectedInvoice.value;
-  
-  // Calculate points
-  const pointsEarned = calculatePointsEarned();
-  const pointsRedeemed = safeNumber(invoice.redeem_points || 0);
-  const currentPoints = safeNumber(invoice.customer?.points || 0);
-  const totalPoints = currentPoints + pointsEarned - pointsRedeemed;
-  
   return `
     <!DOCTYPE html>
     <html>
@@ -265,163 +287,105 @@ const generateReceiptContent = () => {
         .mb-2 { margin-bottom: 8px; }
         .text-green { color: #16a34a; }
         .text-red { color: #dc2626; }
-        
-        .invoice-container {
-          width: 100%;
-        }
-        
+
         .items-table {
           width: 100%;
           border-collapse: collapse;
           margin: 8px 0;
         }
-        
+
         .items-table th,
         .items-table td {
           padding: 3px 0;
           border-bottom: 1px dashed #ccc;
         }
-        
+
         .items-table th {
           border-bottom: 1px solid #000;
-          font-weight: bold;
-        }
-        
-        .totals-section {
-          margin-top: 8px;
-        }
-        
-        .total-line {
-          border-top: 1px solid #000;
-          padding-top: 4px;
-          margin-top: 4px;
-        }
-        
-        .points-section {
-          margin-top: 8px;
-          padding-top: 8px;
-          border-top: 1px dashed #000;
-          font-size: 11px;
-        }
-        
-        .cut-line {
-          margin-top: 16px;
-          font-weight: bold;
-          letter-spacing: 1px;
-        }
-        
-        @media print {
-          body { 
-            margin: 0;
-            padding: 10px;
-          }
         }
       </style>
     </head>
     <body>
-      <div class="invoice-container">
-        <!-- Header -->
-        <div class="text-center mb-2">
-          <h1 class="font-bold" style="font-size: 14px;">Al Zabeer</h1>
-          <p class="text-xs">Town Chikandi Bazar,</p>
-          <p class="text-xs">Shariatpur Shadar, Shariatpur</p>
-          <p class="text-xs">Phone: 01791927084</p>
-          <p class="text-xs">Website: alzabeer.store</p>
+      <div class="text-center mb-2">
+        <h1 class="font-bold" style="font-size: 14px;">${shop_name}</h1>
+        <p>${location}</p>
+        <p>Phone: ${phone}</p>
+        <p>${email_or_link}</p>
+      </div>
+
+      <div class="mb-2">
+        <p>Invoice #: ${invoice.id}</p>
+        <p>Date: ${formatDate(invoice.date)}</p>
+        <p>Customer: ${invoice.customer?.name || 'Walk-in'}</p>
+        <p>Phone: ${invoice.customer?.phone || 'N/A'}</p>
+      </div>
+
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="text-left">Item</th>
+            <th class="text-center">Qty</th>
+            <th class="text-right">Price</th>
+            <th class="text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${invoice.items.map(item => {
+            const product = products.find(p => p.id === item.product);
+            const name = product ? product.title : "Unknown";
+            const total = safeNumber(item.total);
+            const qty = safeNumber(item.quantity);
+            const price = qty > 0 ? (total / qty) : 0;
+            return `
+              <tr>
+                <td>${name}</td>
+                <td class="text-center">${qty}</td>
+                <td class="text-right">৳${price.toFixed(2)}</td>
+                <td class="text-right">৳${total.toFixed(2)}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <div class="mt-2">
+        <div class="flex justify-between">
+          <span>Subtotal:</span><span>৳${safeNumber(invoice.subtotal).toFixed(2)}</span>
         </div>
-
-        <!-- Invoice Info -->
-        <div class="text-xs mb-2">
-          <p>Invoice #: ${invoice.id}</p>
-          <p>Date: ${formatDate(invoice.date)}</p>
-          <p>Customer: ${invoice.customer?.name || 'Walk-in'}</p>
-          <p>Phone: ${invoice.customer?.phone || 'N/A'}</p>
+        <div class="flex justify-between">
+          <span>Discount:</span><span>৳${safeNumber(invoice.discount).toFixed(2)}</span>
         </div>
-
-        <!-- Items Table -->
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th class="text-left">Item</th>
-              <th class="text-center">Qty</th>
-              <th class="text-right">Price</th>
-              <th class="text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${invoice.items.map(item => {
-              const product = products.value.find(p => p.id === item.product);
-              const productName = product ? product.title : 'Unknown Product';
-              const itemTotal = safeNumber(item.total);
-              const itemQuantity = safeNumber(item.quantity);
-              const unitPrice = itemQuantity > 0 ? (itemTotal / itemQuantity) : 0;
-              
-              return `
-                <tr>
-                  <td class="text-left">${productName}</td>
-                  <td class="text-center">${itemQuantity}</td>
-                  <td class="text-right">৳${unitPrice.toFixed(2)}</td>
-                  <td class="text-right">৳${itemTotal.toFixed(2)}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-
-        <!-- Totals -->
-        <div class="totals-section">
-          <div class="flex justify-between">
-            <span>Subtotal:</span>
-            <span>৳${safeNumber(invoice.subtotal).toFixed(2)}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Discount:</span>
-            <span>৳${safeNumber(invoice.discount).toFixed(2)}</span>
-          </div>
-          <div class="flex justify-between font-bold total-line">
-            <span>Total:</span>
-            <span>৳${safeNumber(invoice.total).toFixed(2)}</span>
-          </div>
+        <div class="flex justify-between font-bold border-t pt-2 mt-2">
+          <span>Total:</span><span>৳${safeNumber(invoice.total).toFixed(2)}</span>
         </div>
+      </div>
 
-        <!-- Points Information -->
-        ${invoice.customer ? `
-        <div class="points-section">
+      ${invoice.customer ? `
+        <div class="mt-2 pt-2 border-t border-dashed text-xs">
           <div class="flex justify-between">
-            <span>Previous Points:</span>
-            <span>${currentPoints} pts</span>
+            <span>Previous Points:</span><span>${currentPoints}</span>
           </div>
           <div class="flex justify-between">
-            <span>Points Earned:</span>
-            <span class="text-green">+${pointsEarned} pts</span>
+            <span>Earned:</span><span class="text-green">+${pointsEarned}</span>
           </div>
           ${pointsRedeemed > 0 ? `
-          <div class="flex justify-between">
-            <span>Points Redeemed:</span>
-            <span class="text-red">-${pointsRedeemed} pts</span>
-          </div>
-          ` : ''}
-          <div class="flex justify-between font-bold border-t border-dashed mt-1 pt-1">
-            <span>Total Points:</span>
-            <span>${totalPoints} pts</span>
+            <div class="flex justify-between">
+              <span>Redeemed:</span><span class="text-red">-${pointsRedeemed}</span>
+            </div>` : ``}
+          <div class="flex justify-between font-bold border-t mt-1 pt-1">
+            <span>Total Points:</span><span>${totalPoints}</span>
           </div>
         </div>
-        ` : ''}
+      ` : ''}
 
-        <!-- Footer -->
-        <div class="text-center text-xs mt-4">
-          <p>Thank you for shopping!</p>
-          <p>Visit Again</p>
-        </div>
-        
-        <!-- Cut line -->
-        <div class="cut-line text-center mt-4">-------------------------------</div>
+      <div class="text-center text-xs mt-4">
+        <p>Thank you for shopping!</p>
+        <p>Visit Again</p>
       </div>
-      
+
       <script>
         window.onload = function() {
-          setTimeout(() => {
-            window.print();
-          }, 500);
+          setTimeout(() => window.print(), 500);
         }
       <\/script>
     </body>

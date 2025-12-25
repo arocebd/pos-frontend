@@ -43,7 +43,8 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="text-center py-8">
-      <p>Loading customers...</p>
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p class="mt-4 text-gray-600">Loading customers...</p>
     </div>
 
     <!-- Customers Grid -->
@@ -51,7 +52,7 @@
       <div 
         v-for="customer in customers" 
         :key="customer.id"
-        class="bg-white rounded-xl shadow hover:shadow-lg transition p-6"
+        class="bg-white rounded-xl shadow hover:shadow-lg transition p-6 customer-card"
       >
         <div class="flex justify-between items-start mb-4">
           <div>
@@ -97,7 +98,7 @@
         <div class="mt-4 flex gap-2">
           <button 
             @click="viewCustomerHistory(customer)"
-            class="flex-1 bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200"
+            class="flex-1 bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200"
           >
             View History
           </button>
@@ -105,7 +106,7 @@
             @click="adjustPoints(customer)"
             class="flex-1 bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-sm hover:bg-yellow-200"
           >
-            Adjust Points
+            ⭐ Adjust Points
           </button>
         </div>
       </div>
@@ -125,10 +126,10 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="customers.length > 0" class="flex justify-center items-center gap-4 mt-8">
+    <div v-if="customers.length > 0 && totalPages > 1" class="flex justify-center items-center gap-4 mt-8">
       <button 
         @click="prevPage"
-        :disabled="!pagination.previous"
+        :disabled="currentPage === 1"
         class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         ← Previous
@@ -138,7 +139,7 @@
       </span>
       <button 
         @click="nextPage"
-        :disabled="!pagination.next"
+        :disabled="currentPage >= totalPages"
         class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Next →
@@ -176,11 +177,12 @@
                   class="w-full border rounded p-2"
                   placeholder="Enter phone number"
                 />
-                <p class="text-xs text-gray-500 mt-1">Phone number must be unique</p>
+                <p class="text-xs text-gray-500 mt-1" v-if="!editingCustomer">Phone number must be unique</p>
+                <p class="text-xs text-yellow-500 mt-1" v-else>Phone number cannot be changed</p>
               </div>
 
-              <div v-if="editingCustomer">
-                <label class="block text-sm font-semibold mb-1">Adjust Points</label>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Points Balance</label>
                 <input 
                   v-model.number="customerForm.points"
                   type="number"
@@ -188,7 +190,9 @@
                   class="w-full border rounded p-2"
                   placeholder="Points balance"
                 />
-                <p class="text-xs text-gray-500 mt-1">Current points: {{ editingCustomer.points }}</p>
+                <p class="text-xs text-gray-500 mt-1" v-if="editingCustomer">
+                  Current points: {{ editingCustomer.points }}
+                </p>
               </div>
             </div>
 
@@ -219,7 +223,7 @@
         <div class="p-6">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-xl font-bold">Sales History - {{ selectedCustomer.name }}</h3>
-            <button @click="selectedCustomer = null" class="text-gray-500 hover:text-gray-700">✕</button>
+            <button @click="selectedCustomer = null" class="text-gray-500 hover:text-gray-700 text-xl">✕</button>
           </div>
           
           <div class="bg-gray-50 p-4 rounded-lg mb-4">
@@ -233,13 +237,22 @@
                 <p class="font-bold text-lg text-green-600">৳{{ totalSpent.toFixed(2) }}</p>
               </div>
               <div>
-                <p class="text-sm text-gray-600">Points Earned</p>
-                <p class="font-bold text-lg text-blue-600">⭐ {{ totalPointsEarned }}</p>
+                <p class="text-sm text-gray-600">Points Balance</p>
+                <p class="font-bold text-lg text-blue-600">⭐ {{ selectedCustomer.points }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Payment Due</p>
+                <p class="font-bold text-lg text-blue-600">{{ selectedCustomer.due_amount}}</p>
               </div>
             </div>
           </div>
 
-          <div class="overflow-y-auto max-h-96">
+          <div v-if="customerSales.length === 0" class="text-center py-8">
+            <div class="text-gray-400 text-4xl mb-4">📊</div>
+            <p class="text-gray-500">No sales history found for this customer.</p>
+          </div>
+
+          <div v-else class="overflow-y-auto max-h-96">
             <table class="w-full text-sm">
               <thead class="bg-gray-100 sticky top-0">
                 <tr>
@@ -248,17 +261,30 @@
                   <th class="px-4 py-2 text-right">Amount</th>
                   <th class="px-4 py-2 text-right">Points Earned</th>
                   <th class="px-4 py-2 text-right">Points Redeemed</th>
+                  <th class="px-4 py-2 text-right">Payment Due</th>
+                  <th class="px-4 py-2 text-right">Payment Method</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="sale in customerSales" :key="sale.id" class="border-b">
+                <tr v-for="sale in customerSales" :key="sale.id" class="border-b hover:bg-gray-50">
                   <td class="px-4 py-2">#{{ sale.id }}</td>
-                  <td class="px-4 py-2">{{ formatDate(sale.date) }}</td>
-                  <td class="px-4 py-2 text-right">৳{{ sale.total }}</td>
-                  <td class="px-4 py-2 text-right text-green-600">+{{ sale.earned_points || 0 }}</td>
-                  <td class="px-4 py-2 text-right text-red-600">{{ sale.redeemed_points || 0 }}</td>
+                  <td class="px-4 py-2">{{ formatDate(sale.created_at || sale.date) }}</td>
+                  <td class="px-4 py-2 text-right">৳{{ sale.total_amount || sale.total || 0 }}</td>
+                  <td class="px-4 py-2 text-right text-green-600">+{{ sale.points_earned || sale.earned_points || 0 }}</td>
+                  <td class="px-4 py-2 text-right text-red-600">{{ sale.points_redeemed || sale.redeemed_points || 0 }}</td>
+                  <td class="px-4 py-2 text-right">৳{{ sale.due_amount || 0 }}</td>
+                  <td class="px-4 py-2 text-right">{{ sale.payment_method || 'N/A' }}</td>
                 </tr>
               </tbody>
+              <tfoot class="bg-gray-50">
+                <tr>
+                  <td colspan="2" class="px-4 py-2 font-semibold">Totals:</td>
+                  <td class="px-4 py-2 text-right font-bold">৳{{ totalSpent.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-right font-bold text-green-600">+{{ totalPointsEarned }}</td>
+                  <td class="px-4 py-2 text-right font-bold text-red-600">{{ totalPointsRedeemed }}</td>
+                  <td class="px-4 py-2"></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -268,7 +294,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import axios from "../axios";
 
 const customers = ref([]);
@@ -280,14 +306,8 @@ const selectedCustomer = ref(null);
 const customerSales = ref([]);
 const searchQuery = ref("");
 const sortBy = ref("name");
-const pagination = ref({
-  next: null,
-  previous: null,
-  count: 0
-});
-
 const currentPage = ref(1);
-const pageSize = 12;
+const totalPages = ref(1);
 
 const customerForm = ref({
   name: "",
@@ -295,115 +315,225 @@ const customerForm = ref({
   points: 0
 });
 
-const totalPages = computed(() => 
-  Math.ceil(pagination.value.count / pageSize)
-);
+// Computed properties
+const totalSpent = computed(() => {
+  return customerSales.value.reduce((sum, sale) => {
+    return sum + parseFloat(sale.total_amount || sale.total || 0);
+  }, 0);
+});
 
-const totalSpent = computed(() => 
-  customerSales.value.reduce((sum, sale) => sum + parseFloat(sale.total), 0)
-);
+const totalPointsEarned = computed(() => {
+  return customerSales.value.reduce((sum, sale) => {
+    return sum + parseInt(sale.points_earned || sale.earned_points || 0);
+  }, 0);
+});
 
-const totalPointsEarned = computed(() => 
-  customerSales.value.reduce((sum, sale) => sum + (sale.earned_points || 0), 0)
-);
+const totalPointsRedeemed = computed(() => {
+  return customerSales.value.reduce((sum, sale) => {
+    return sum + parseInt(sale.points_redeemed || sale.redeemed_points || 0);
+  }, 0);
+});
 
-// 🧩 Fetch customers
-async function fetchCustomers(page = 1) {
-  loading.value = true;
+// Format date
+function formatDate(dateString) {
+  if (!dateString) return 'N/A';
   try {
-    let url = `/customers/?page=${page}&page_size=${pageSize}`;
-    
-    if (searchQuery.value) {
-      url += `&search=${searchQuery.value}`;
-    }
-    
-    if (sortBy.value === 'points') {
-      url += '&ordering=-points';
-    } else if (sortBy.value === 'recent') {
-      url += '&ordering=-id';
-    } else {
-      url += '&ordering=name';
-    }
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    return 'Invalid Date';
+  }
+}
 
-    const res = await axios.get(url);
-    customers.value = res.data.results || res.data;
-    pagination.value = {
-      next: res.data.next,
-      previous: res.data.previous,
-      count: res.data.count
+// Fetch customers
+async function fetchCustomers() {
+  loading.value = true;
+  console.log("🔄 Fetching customers...");
+  
+  // Debug: Check authentication token
+  const token = localStorage.getItem('access');
+  console.log("Auth token exists:", !!token);
+  
+  try {
+    // Add pagination parameters
+    const params = {
+      page: currentPage.value,
+      page_size: 12
     };
-    currentPage.value = page;
-  } catch (err) {
-    console.error("❌ Error fetching customers:", err);
-    alert("Failed to load customers");
+    
+    // Add search if exists
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value;
+    }
+    
+    const response = await axios.get('/customers/', { params });
+    
+    console.log("📊 API Response structure:", response.data);
+    
+    // Handle paginated response
+    if (response.data.results && Array.isArray(response.data.results)) {
+      customers.value = response.data.results;
+      totalPages.value = Math.ceil(response.data.count / 12) || 1;
+      console.log(`✅ Loaded ${customers.value.length} customers (Page ${currentPage.value}/${totalPages.value})`);
+    } else if (Array.isArray(response.data)) {
+      customers.value = response.data;
+      totalPages.value = 1;
+      console.log(`✅ Loaded ${customers.value.length} customers`);
+    } else {
+      console.error("❌ Unexpected API response format:", response.data);
+      customers.value = [];
+    }
+    
+    // Sort customers
+    sortCustomers();
+    
+  } catch (error) {
+    console.error("❌ Error fetching customers:", error);
+    
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      console.error("🔑 Authentication failed");
+      // Clear all auth data
+      localStorage.removeItem('access');
+      localStorage.removeItem('refresh');
+      localStorage.removeItem('user');
+      localStorage.removeItem('shop_status');
+      // Redirect to login
+      window.location.href = '/login';
+      return;
+    }
+    
+    // Handle other errors
+    if (error.response?.status === 402) {
+      alert("⚠️ Subscription required. Please upgrade your plan.");
+      window.location.href = '/subscription-status';
+      return;
+    }
+    
+    if (error.response?.status === 404) {
+      console.warn("⚠️ Customers endpoint not found, trying without pagination...");
+      // Try without pagination
+      try {
+        const simpleResponse = await axios.get('/customers/');
+        if (Array.isArray(simpleResponse.data)) {
+          customers.value = simpleResponse.data;
+        }
+      } catch (innerError) {
+        console.error("❌ Fallback also failed:", innerError);
+      }
+    } else {
+      alert("Failed to load customers. Please try again.");
+    }
+    
+    customers.value = [];
   } finally {
     loading.value = false;
   }
 }
 
-// 🧩 Search customers with debounce
-let searchTimeout;
-function searchCustomers() {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    fetchCustomers(1);
-  }, 500);
+// Sort customers based on selected option
+function sortCustomers() {
+  if (sortBy.value === "points") {
+    customers.value.sort((a, b) => b.points - a.points);
+  } else if (sortBy.value === "recent") {
+    customers.value.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  } else {
+    customers.value.sort((a, b) => a.name.localeCompare(b.name));
+  }
 }
 
-// 🧩 Add new customer
+// Search customers
+async function searchCustomers() {
+  if (!searchQuery.value.trim()) {
+    fetchCustomers();
+    return;
+  }
+  
+  loading.value = true;
+  try {
+    const params = new URLSearchParams();
+    params.append('search', searchQuery.value);
+    
+    const response = await axios.get(`/customers/?${params.toString()}`);
+    
+    if (Array.isArray(response.data)) {
+      customers.value = response.data;
+    } else if (response.data.results) {
+      customers.value = response.data.results;
+    } else {
+      customers.value = Object.values(response.data);
+    }
+    
+  } catch (error) {
+    console.error("Search error:", error);
+    customers.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+// Save customer
 async function saveCustomer() {
   saving.value = true;
   try {
     if (editingCustomer.value) {
-      // Update existing customer
       await axios.put(`/customers/${editingCustomer.value.id}/`, customerForm.value);
+      alert("✅ Customer updated successfully!");
     } else {
-      // Create new customer
       await axios.post("/customers/", customerForm.value);
+      alert("✅ Customer created successfully!");
     }
     
-    await fetchCustomers(currentPage.value);
+    await fetchCustomers();
     closeModal();
-    alert(editingCustomer.value ? "Customer updated successfully!" : "Customer created successfully!");
-  } catch (err) {
-    console.error("❌ Error saving customer:", err);
-    if (err.response?.data?.phone?.[0]?.includes('already exists')) {
-      alert("❌ A customer with this phone number already exists!");
+    
+  } catch (error) {
+    console.error("Error saving customer:", error);
+    
+    if (error.response?.data?.phone) {
+      alert("❌ Error: " + error.response.data.phone.join(", "));
+    } else if (error.response?.data?.detail) {
+      alert("❌ Error: " + error.response.data.detail);
+    } else if (error.response?.data?.non_field_errors) {
+      alert("❌ Error: " + error.response.data.non_field_errors.join(", "));
     } else {
-      alert("Failed to save customer");
+      alert("❌ Failed to save customer. Please check your input.");
     }
   } finally {
     saving.value = false;
   }
 }
 
-// 🧩 Edit customer
+// Edit customer - FIXED: Now passing customer object
 function editCustomer(customer) {
   editingCustomer.value = customer;
   customerForm.value = {
     name: customer.name,
     phone: customer.phone,
-    points: customer.points
+    points: customer.points || 0
   };
 }
 
-// 🧩 Delete customer
+// Delete customer
 async function deleteCustomer(customerId) {
-  if (!confirm("Are you sure you want to delete this customer? This action cannot be undone.")) {
+  if (!confirm("⚠️ Are you sure you want to delete this customer? This action cannot be undone.")) {
     return;
   }
 
   try {
     await axios.delete(`/customers/${customerId}/`);
-    await fetchCustomers(currentPage.value);
-    alert("Customer deleted successfully!");
-  } catch (err) {
-    console.error("❌ Error deleting customer:", err);
-    alert("Failed to delete customer");
+    await fetchCustomers();
+    alert("✅ Customer deleted successfully!");
+  } catch (error) {
+    console.error("Delete error:", error);
+    alert("❌ Failed to delete customer. They may have sales records.");
   }
 }
 
-// 🧩 View customer sales history
+// View customer history - FIXED: Now passing customer object
 async function viewCustomerHistory(customer) {
   selectedCustomer.value = customer;
   try {
@@ -415,12 +545,13 @@ async function viewCustomerHistory(customer) {
   }
 }
 
-// 🧩 Adjust points
+
+// Adjust points - FIXED: Now passing customer object
 function adjustPoints(customer) {
   editCustomer(customer);
 }
 
-// 🧩 Close modal
+// Close modal
 function closeModal() {
   showAddCustomer.value = false;
   editingCustomer.value = null;
@@ -431,31 +562,24 @@ function closeModal() {
   };
 }
 
-// 🧩 Pagination
+// Pagination functions
 function nextPage() {
-  if (pagination.value.next) {
-    fetchCustomers(currentPage.value + 1);
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    fetchCustomers();
   }
 }
 
 function prevPage() {
-  if (pagination.value.previous) {
-    fetchCustomers(currentPage.value - 1);
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    fetchCustomers();
   }
 }
 
-// 🧩 Format date
-function formatDate(dateString) {
-  if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
-// 🧩 Initialize
+// Initialize
 onMounted(() => {
+  console.log("🔄 Customer component mounted");
   fetchCustomers();
 });
 </script>

@@ -74,13 +74,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import axios from "@/axios"
 
 const route = useRoute()
 const invoice = ref({ items: [] })
 
 onMounted(async () => {
-  const res = await axios.get(`http://127.0.0.1:8000/api/sales/${route.params.id}/`)
+  const res = await axios.get(`/sales/${route.params.id}/`)
   invoice.value = res.data
 })
 

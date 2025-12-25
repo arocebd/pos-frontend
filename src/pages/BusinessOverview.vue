@@ -1,7 +1,7 @@
 <template>
   <div class="p-6 space-y-6">
     <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold">📈 Business Overview</h2>
+      <h2 class="text-2xl font-bold">Business Overview</h2>
       <div class="flex gap-2">
         <button @click="exportExcel" class="bg-emerald-600 text-white px-4 py-2 rounded hover:opacity-90">
           Export Excel
@@ -82,7 +82,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import axios from '../axios'
 import Chart from 'chart.js/auto'
 import KpiCard from './KpiCard.vue' // Make sure this path is correct
 
@@ -102,11 +102,9 @@ const profitChart = ref(null)
 let ieInstance = null
 let profitInstance = null
 
-const apiBase = 'http://127.0.0.1:8000/api'
-
 async function fetchSummary() {
   try {
-    const { data } = await axios.get(`${apiBase}/business-overview/`, {
+    const { data } = await axios.get(`business-overview/`, {
       params: { 
         start_date: start_date.value, 
         end_date: end_date.value 
@@ -121,7 +119,7 @@ async function fetchSummary() {
 
 async function fetchTimeseries() {
   try {
-    const { data } = await axios.get(`${apiBase}/business-overview/timeseries/`, {
+    const { data } = await axios.get(`business-overview/timeseries/`, {
       params: { 
         start_date: start_date.value, 
         end_date: end_date.value 
@@ -261,24 +259,85 @@ async function generate() {
   }
 }
 
-function exportExcel() {
+async function exportExcel() {
   if (!start_date.value || !end_date.value) {
-    alert('Please select date range first')
-    return
+    alert("Please select date range first");
+    return;
   }
-  
-  const url = `${apiBase}/business-overview/export/excel/?start_date=${start_date.value}&end_date=${end_date.value}`
-  window.open(url, '_blank')
+
+  try {
+    const token = localStorage.getItem("access"); // ✅ get token
+
+    const response = await axios.get(`/business-overview/export/excel/`, {
+      params: {
+        start_date: start_date.value,
+        end_date: end_date.value,
+      },
+      responseType: "blob",
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ send token
+      },
+    });
+
+    const blob = new Blob([response.data], {
+      type: response.headers["content-type"],
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `business_overview_${start_date.value}_to_${end_date.value}.xlsx`
+    );
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Failed to export Excel:", err);
+    alert("Failed to download Excel file. Check your login.");
+  }
 }
 
-function exportPDF() {
+
+async function exportPDF() {
   if (!start_date.value || !end_date.value) {
-    alert('Please select date range first')
-    return
+    alert("Please select date range first");
+    return;
   }
-  
-  const url = `${apiBase}/business-overview/export/pdf/?start_date=${start_date.value}&end_date=${end_date.value}`
-  window.open(url, '_blank')
+
+  try {
+    const token = localStorage.getItem("access"); // 🔐 get JWT token
+
+    const response = await axios.get(`/business-overview/export/pdf/`, {
+      params: {
+        start_date: start_date.value,
+        end_date: end_date.value,
+      },
+      responseType: "blob",
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ send auth
+      },
+    });
+
+    // 🔽 download file
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.setAttribute("download", `business_overview_${start_date.value}_to_${end_date.value}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Download failed:", err);
+    alert("Failed to download PDF. Check login or try again.");
+  }
 }
 
 onMounted(() => {

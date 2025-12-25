@@ -85,6 +85,7 @@
         <div class="md:col-span-3">
           <label class="block text-sm font-medium mb-1">Product Image</label>
           <input type="file" accept="image/*" @change="onImage" />
+          <p class="text-sm text-gray-500 mt-1">Recommended size: 400x400px and must less than 50 KB</p>
         </div>
       </div>
 
@@ -104,8 +105,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
-import axios from "axios";
+import { ref, computed, onMounted } from "vue";
+import api from "@/axios";
 
 const form = ref({
   title: "",
@@ -125,8 +126,6 @@ const categories = ref([]);
 const newCat = ref("");
 const addingCat = ref(false);
 const loading = ref(false);
-
-const api = axios.create({ baseURL: "http://127.0.0.1:8000/api/" });
 
 // Load categories
 const loadCategories = async () => {
@@ -193,6 +192,7 @@ const submitForm = async () => {
       sku: "",
       barcode: "",
       category: "",
+      purchased_price: "",
       regular_price: "",
       selling_price: "",
       discount: "",   // reset

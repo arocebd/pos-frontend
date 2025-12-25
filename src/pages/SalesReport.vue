@@ -2,7 +2,7 @@
   <div class="max-w-7xl mx-auto p-6">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
-      <h2 class="text-2xl font-bold text-gray-800">📊 Sales Report</h2>
+      <h2 class="text-2xl font-bold text-gray-800">Sales Report</h2>
       <div class="flex gap-2">
         <button
           class="px-3 py-2 rounded border hover:bg-gray-50"
@@ -166,13 +166,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
-  withCredentials: false,    // avoid preflight/CORS for simple GETs
-  timeout: 20000,
-})
+import axios from '../axios'
 
 const startDate = ref('')
 const endDate   = ref('')
@@ -237,7 +231,7 @@ async function generate() {
 
   loading.value = true
   try {
-    const res = await api.get('/api/sales-report/', {
+    const res = await axios.get('/sales-report/', {
       params: {
         start_date: startDate.value,
         end_date: endDate.value,
@@ -259,7 +253,7 @@ function exportReport(fmt) {
     error.value = 'Please select start and end date.'
     return
   }
-  const url = new URL('/api/sales-report/', import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000')
+  const url = new URL('/sales-report/')  
   url.searchParams.set('start_date', startDate.value)
   url.searchParams.set('end_date', endDate.value)
   url.searchParams.set('type', reportType.value)

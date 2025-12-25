@@ -116,8 +116,8 @@
 </template>
 
 <script>
-import axios from "axios";
 import { useRoute, useRouter } from "vue-router";
+import axios from "../axios"
 
 export default {
   name: "EditProduct",
@@ -149,7 +149,7 @@ export default {
     const id = this.route.params.id;
     try {
       // Load product
-      const productRes = await axios.get(`http://127.0.0.1:8000/api/products/${id}/`);
+      const productRes = await axios.get(`/products/${id}/`);
       const data = productRes.data;
 
       // Ensure category is ID (not object)
@@ -167,7 +167,7 @@ export default {
       this.existingImage = data.image;
 
       // Load categories
-      const catRes = await axios.get("http://127.0.0.1:8000/api/categories/");
+      const catRes = await axios.get("/categories/");
       this.categories = catRes.data;
     } catch (err) {
       console.error("Error loading product:", err);
@@ -194,7 +194,7 @@ export default {
   const id = this.route.params.id;
 
   try {
-    await axios.delete(`http://127.0.0.1:8000/api/products/${id}/`);
+    await axios.delete(`/products/${id}/`);
     alert("🗑️ Product deleted successfully!");
     this.router.push("/products");
   } catch (err) {
@@ -218,7 +218,7 @@ export default {
       }
 
       try {
-        await axios.patch(`http://127.0.0.1:8000/api/products/${id}/`, formData, {
+        await axios.patch(`/products/${id}/`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
         alert("✅ Product updated successfully!");
