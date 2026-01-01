@@ -109,8 +109,17 @@ export default {
 
       // Category filter
       if (this.selectedCategory) {
-        list = list.filter((p) => p.category?.id == this.selectedCategory);
-      }
+  const selected = String(this.selectedCategory);
+
+  list = list.filter((p) => {
+    // p.category might be: {id: 3, name: "..."} OR 3 OR "3"
+    const productCatId =
+      typeof p.category === "object" && p.category !== null
+        ? String(p.category.id)
+        : String(p.category);
+
+    return productCatId === selected;
+  });
 
       // Sorting
       if (this.sortBy === "price_low") {
