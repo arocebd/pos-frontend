@@ -107,8 +107,7 @@ export default {
         );
       }
 
-      // Category filter
-      if (this.selectedCategory) {
+            if (this.selectedCategory) {
   const selected = String(this.selectedCategory);
 
   list = list.filter((p) => {
@@ -120,7 +119,7 @@ export default {
 
     return productCatId === selected;
   });
-
+}
       // Sorting
       if (this.sortBy === "price_low") {
         list.sort((a, b) => a.selling_price - b.selling_price);
