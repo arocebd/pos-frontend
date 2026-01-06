@@ -107,35 +107,19 @@ export default {
         );
       }
 
-<<<<<<< HEAD
-            if (this.selectedCategory) {
-  const selected = String(this.selectedCategory);
-=======
       if (this.selectedCategory) {
-  const selected = String(this.selectedCategory);
+        const selected = String(this.selectedCategory);
 
-  list = list.filter((p) => {
-    // p.category might be: {id: 3, name: "..."} OR 3 OR "3"
-    const productCatId =
-      typeof p.category === "object" && p.category !== null
-        ? String(p.category.id)
-        : String(p.category);
+        list = list.filter((p) => {
+          const productCatId =
+            typeof p.category === "object" && p.category !== null
+              ? String(p.category.id)
+              : String(p.category);
 
-    return productCatId === selected;
-  });
-}
->>>>>>> 8313b36 (Update)
+          return productCatId === selected;
+        });
+      }
 
-  list = list.filter((p) => {
-    // p.category might be: {id: 3, name: "..."} OR 3 OR "3"
-    const productCatId =
-      typeof p.category === "object" && p.category !== null
-        ? String(p.category.id)
-        : String(p.category);
-
-    return productCatId === selected;
-  });
-}
       // Sorting
       if (this.sortBy === "price_low") {
         list.sort((a, b) => a.selling_price - b.selling_price);
