@@ -19,6 +19,24 @@
         {{ error }}
       </div>
 
+      <!-- Payment Instructions -->
+      <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <h3 class="font-bold text-blue-900 mb-3">💳 Payment Instructions</h3>
+        <div class="space-y-2 text-sm text-blue-800">
+          <div class="bg-white p-3 rounded">
+            <p class="font-semibold">bKash (Merchant):</p>
+            <p class="text-lg font-mono font-bold text-blue-600">01791927084</p>
+          </div>
+          <div class="bg-white p-3 rounded">
+            <p class="font-semibold">Nagad (Personal):</p>
+            <p class="text-lg font-mono font-bold text-blue-600">01791927084</p>
+          </div>
+          <p class="mt-3 text-xs text-blue-700">
+            ⚠️ Please send payment to one of the above numbers, then fill out the form below with your payment details.
+          </p>
+        </div>
+      </div>
+
       <p class="text-gray-700 mb-4">
         Please enter the payment details below. After submission, our admin team will verify your payment and send you an SMS.
       </p>

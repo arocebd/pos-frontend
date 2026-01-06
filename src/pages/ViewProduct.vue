@@ -107,8 +107,24 @@ export default {
         );
       }
 
+<<<<<<< HEAD
             if (this.selectedCategory) {
   const selected = String(this.selectedCategory);
+=======
+      if (this.selectedCategory) {
+  const selected = String(this.selectedCategory);
+
+  list = list.filter((p) => {
+    // p.category might be: {id: 3, name: "..."} OR 3 OR "3"
+    const productCatId =
+      typeof p.category === "object" && p.category !== null
+        ? String(p.category.id)
+        : String(p.category);
+
+    return productCatId === selected;
+  });
+}
+>>>>>>> 8313b36 (Update)
 
   list = list.filter((p) => {
     // p.category might be: {id: 3, name: "..."} OR 3 OR "3"
@@ -132,10 +148,10 @@ export default {
   },
   async created() {
     try {
-      const productRes = await axios.get("products/");
+      const productRes = await axios.get(`products/`);
       this.products = productRes.data;
 
-      const categoryRes = await axios.get("categories/");
+      const categoryRes = await axios.get(`categories/`);
       this.categories = categoryRes.data;
     } catch (err) {
       console.error("API Error", err);

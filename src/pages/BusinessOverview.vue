@@ -46,13 +46,15 @@
 
     <!-- KPI cards -->
     <div v-if="overview && !loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      <KpiCard title="Total Income" :value="overview.total_income" variant="success"/>
+      <KpiCard title="Sales Revenue" :value="overview.total_income" variant="success"/>
+      <KpiCard v-if="overview.total_vat_amount > 0" title="VAT Collected" :value="overview.total_vat_amount" variant="info"/>
+      <KpiCard v-if="overview.total_vat_amount > 0" title="Base Sales Amount" :value="overview.base_sales_amount" variant="default"/>
       <KpiCard title="Total Expense" :value="overview.total_expense" variant="danger"/>
       <KpiCard title="Total Purchase" :value="overview.total_purchase" variant="default"/>
-      <KpiCard title="Gross Profit" :value="overview.gross_profit" variant="info"/>
-      <KpiCard title="Net Profit" :value="overview.net_profit" :variant="overview.net_profit >= 0 ? 'success' : 'danger'"/>
+      <KpiCard title="Gross Profit" :value="overview.gross_profit" variant="info" :subtitle="`Sales Revenue (৳${fmtNum(overview.total_income)}) - Cost of Goods Sold`"/>
+      <KpiCard title="Net Profit" :value="overview.net_profit" :variant="overview.net_profit >= 0 ? 'success' : 'danger'" :subtitle="`Gross Profit (৳${fmtNum(overview.gross_profit)}) - Expense (৳${fmtNum(overview.total_expense)})`"/>
       <KpiCard title="Business Growth %" :value="overview.business_growth" suffix="%" />
-      <KpiCard title="Fixed Cost" :value="overview.fixed_cost" variant="default"/>
+      <KpiCard title="Expenses" :value="overview.fixed_cost" variant="default"/>
       <KpiCard title="Cash Flow" :value="overview.cash_flow" :variant="overview.cash_flow >= 0 ? 'primary' : 'danger'"/>
       <KpiCard title="Inventory Value" :value="overview.total_stock_value" variant="default"/>
     </div>
@@ -101,6 +103,10 @@ const ieChart = ref(null)
 const profitChart = ref(null)
 let ieInstance = null
 let profitInstance = null
+
+function fmtNum(n) {
+  return Number(n || 0).toFixed(2);
+}
 
 async function fetchSummary() {
   try {

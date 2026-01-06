@@ -6,7 +6,6 @@
       </h2>
       <div class="flex gap-2">
         <button @click="goBack" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded">← Back</button>
-        <button @click="toggleDebug" class="px-3 py-2 bg-yellow-500 text-white rounded">Debug</button>
       </div> 
     </div>
 
@@ -77,6 +76,7 @@
             class="flex-1 border rounded p-2"
           />
           <button @click="addByCode" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add</button>
+          <button @click="openQuickAddProduct" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">+ New Product</button>
         </div>
 
         <ul v-if="suggestions.length" class="mt-2 border rounded max-h-56 overflow-y-auto">
@@ -86,10 +86,130 @@
             @click="addItem(p)"
             class="px-3 py-2 hover:bg-gray-50 cursor-pointer flex justify-between"
           >
-            <span>{{ p.title }} ({{ p.product_code }})</span>
+            <div>
+              <span>{{ p.title }} ({{ p.product_code }})</span>
+              <span v-if="p.has_variants" class="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded">Has Variants</span>
+            </div>
             <span class="text-gray-600">৳ {{ p.purchased_price || 0 }}</span>
           </li>
         </ul>
+      </div>
+
+      <!-- Variant Selection Modal -->
+      <div v-if="showVariantModal" 
+           class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+           @click.self="showVariantModal = false">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h3 class="text-xl font-bold mb-4">Select Variant</h3>
+          <p class="text-gray-600 mb-4">{{ selectedProduct?.title }}</p>
+          
+          <div class="space-y-2 max-h-96 overflow-y-auto">
+            <div 
+              v-for="variant in variants[selectedProduct?.id]" 
+              :key="variant.id"
+              @click="selectVariant(variant)"
+              class="p-3 border border-gray-300 rounded-lg hover:bg-blue-50 cursor-pointer transition">
+              <div class="flex justify-between items-center">
+                <div>
+                  <p class="font-semibold">{{ variant.variant_name }}</p>
+                  <p class="text-sm text-gray-500">Stock: {{ variant.stock }}</p>
+                </div>
+                <p class="font-bold text-blue-600">৳{{ variant.purchase_price || variant.selling_price || 0 }}</p>
+              </div>
+            </div>
+          </div>
+
+          <button @click="showVariantModal = false"
+                  class="mt-4 w-full py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Add Product Modal -->
+      <div v-if="showQuickAddProduct" 
+           class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+           @click.self="showQuickAddProduct = false">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-2xl font-bold mb-4">➕ Quick Add Product</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Title -->
+            <div>
+              <label class="block text-sm font-semibold mb-1">Product Title *</label>
+              <input v-model="quickProduct.title" class="w-full border rounded p-2" placeholder="e.g., Rice 5kg bag" />
+            </div>
+
+            <!-- Product Code -->
+            <div>
+              <label class="block text-sm font-semibold mb-1">Product Code *</label>
+              <input v-model="quickProduct.product_code" class="w-full border rounded p-2" placeholder="e.g., PROD001" />
+            </div>
+
+            <!-- Category -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold mb-1">Category *</label>
+              <div class="flex gap-2">
+                <select v-model="quickProduct.category" class="border rounded p-2 flex-1">
+                  <option :value="null" disabled>-- Select Category --</option>
+                  <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+                <input v-model="newCat" placeholder="New category" class="border rounded p-2 w-32" />
+                <button
+                  class="px-3 py-2 rounded border hover:bg-gray-100 text-sm"
+                  :disabled="addingCat || !newCat.trim()"
+                  @click="addCategory"
+                  type="button"
+                >
+                  {{ addingCat ? "Adding..." : "+ Add" }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Base Unit -->
+            <div>
+              <label class="block text-sm font-semibold mb-1">Base Unit *</label>
+              <select v-model="quickProduct.base_unit" class="w-full border rounded p-2">
+                <option value="pcs">Pieces (pcs)</option>
+                <option value="kg">Kilogram (kg)</option>
+                <option value="g">Gram (g)</option>
+                <option value="ltr">Liter (ltr)</option>
+                <option value="ml">Milliliter (ml)</option>
+              </select>
+            </div>
+
+            <!-- Purchase Price -->
+            <div>
+              <label class="block text-sm font-semibold mb-1">Purchase Price *</label>
+              <input v-model.number="quickProduct.purchased_price" type="number" step="0.01" min="0" class="w-full border rounded p-2" placeholder="0.00" />
+            </div>
+
+            <!-- Regular Price -->
+            <div>
+              <label class="block text-sm font-semibold mb-1">Regular Price *</label>
+              <input v-model.number="quickProduct.regular_price" type="number" step="0.01" min="0" class="w-full border rounded p-2" placeholder="0.00" />
+            </div>
+
+            <!-- Selling Price -->
+            <div>
+              <label class="block text-sm font-semibold mb-1">Selling Price</label>
+              <input v-model.number="quickProduct.selling_price" type="number" step="0.01" min="0" class="w-full border rounded p-2" placeholder="0.00" />
+            </div>
+
+            <!-- SKU -->
+            <div>
+              <label class="block text-sm font-semibold mb-1">SKU (Optional)</label>
+              <input v-model="quickProduct.sku" class="w-full border rounded p-2" placeholder="e.g., SKU123" />
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-5">
+            <button @click="showQuickAddProduct = false" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded">Cancel</button>
+            <button @click="saveQuickProduct" :disabled="quickProductLoading" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400">
+              {{ quickProductLoading ? 'Creating...' : 'Create & Add to Purchase' }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Items table -->
@@ -98,30 +218,72 @@
           <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
             <tr>
               <th class="px-3 py-2 text-left">#</th>
-              <th class="px-3 py-2 text-left">Product</th>
-              <th class="px-3 py-2 text-center">Qty</th>
-              <th class="px-3 py-2 text-right">Unit (৳)</th>
+              <th class="px-3 py-2 text-left">Product/Variant</th>
+              <th class="px-3 py-2 text-left">Pack Unit</th>
+              <th class="px-3 py-2 text-right">Pack Size</th>
+              <th class="px-3 py-2 text-right">Qty Packs</th>
+              <th class="px-3 py-2 text-right">Price/Pack</th>
+              <th class="px-3 py-2 text-left">Batch No</th>
+              <th class="px-3 py-2 text-left">Expiry</th>
+              <th class="px-3 py-2 text-right">MRP</th>
+              <th class="px-3 py-2 text-right">Base Qty</th>
               <th class="px-3 py-2 text-right">Total (৳)</th>
               <th class="px-3 py-2 text-center">Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(row, i) in items" :key="row.pid" class="border-t">
+            <tr v-for="(row, i) in items" :key="row.pid + '_' + (row.vid || 0)" class="border-t">
               <td class="px-3 py-2">{{ i + 1 }}</td>
-              <td class="px-3 py-2">{{ row.title }}</td>
-              <td class="px-3 py-2 text-center">
-                <input type="number" min="1" v-model.number="row.qty" class="w-20 border rounded text-center" />
+              <td class="px-3 py-2">
+                <div class="font-medium">{{ row.title }}</div>
+                <div v-if="row.variant_name" class="text-xs text-purple-600">{{ row.variant_name }}</div>
+                <div class="text-xs text-gray-500">{{ row.base_unit }}</div>
+              </td>
+              <td class="px-3 py-2">
+                <select v-model="row.pack_unit" class="border rounded p-1 text-xs w-20">
+                  <option value="unit">Unit</option>
+                  <option value="bag">Bag</option>
+                  <option value="carton">Carton</option>
+                  <option value="box">Box</option>
+                  <option value="strip">Strip</option>
+                  <option value="bottle">Bottle</option>
+                  <option value="pack">Pack</option>
+                </select>
               </td>
               <td class="px-3 py-2 text-right">
-                <input type="number" min="0" step="0.01" v-model.number="row.unit" class="w-28 border rounded text-right" />
+                <input type="number" min="0.001" step="0.001" v-model.number="row.pack_size" 
+                       class="w-20 border rounded p-1 text-right text-xs" />
               </td>
-              <td class="px-3 py-2 text-right">৳ {{ (row.qty * row.unit).toFixed(2) }}</td>
+              <td class="px-3 py-2 text-right">
+                <input type="number" min="0.001" step="0.001" v-model.number="row.qty_packs" 
+                       class="w-20 border rounded p-1 text-right text-xs" />
+              </td>
+              <td class="px-3 py-2 text-right">
+                <input type="number" min="0" step="0.01" v-model.number="row.price_per_pack" 
+                       class="w-24 border rounded p-1 text-right text-xs" />
+              </td>
+              <td class="px-3 py-2">
+                <input type="text" v-model="row.batch_no" placeholder="Optional" 
+                       class="w-24 border rounded p-1 text-xs" />
+              </td>
+              <td class="px-3 py-2">
+                <input type="date" v-model="row.expiry_date" 
+                       class="w-32 border rounded p-1 text-xs" />
+              </td>
+              <td class="px-3 py-2 text-right">
+                <input type="number" min="0" step="0.01" v-model.number="row.mrp" placeholder="Optional"
+                       class="w-20 border rounded p-1 text-right text-xs" />
+              </td>
+              <td class="px-3 py-2 text-right font-medium text-gray-700 text-xs">
+                {{ (row.pack_size * row.qty_packs).toFixed(3) }}
+              </td>
+              <td class="px-3 py-2 text-right font-semibold">৳ {{ (row.price_per_pack * row.qty_packs).toFixed(2) }}</td>
               <td class="px-3 py-2 text-center">
-                <button @click="removeItem(i)" class="text-red-600 hover:text-red-800 px-2 py-1">🗑️ Remove</button>
+                <button @click="removeItem(i)" class="text-red-600 hover:text-red-800 px-2 py-1">🗑️</button>
               </td>
             </tr>
             <tr v-if="items.length === 0">
-              <td colspan="6" class="text-center py-6 text-gray-500">No items added.</td>
+              <td colspan="12" class="text-center py-6 text-gray-500">No items added.</td>
             </tr>
           </tbody>
         </table>
@@ -188,6 +350,12 @@ const router = useRouter();
 const suppliers = ref([]);
 const search = ref("");
 const suggestions = ref([]);
+const variants = ref({});
+const showVariantModal = ref(false);
+const selectedProduct = ref(null);
+const showQuickAddProduct = ref(false);
+const quickProductLoading = ref(false);
+const categories = ref([]);
 const items = ref([]);
 const isEditMode = ref(false);
 const purchaseId = ref(null);
@@ -206,8 +374,22 @@ const form = ref({
   remarks: "",
 });
 
+const quickProduct = ref({
+  title: "",
+  product_code: "",
+  sku: "",
+  category: null,
+  base_unit: "pcs",
+  purchased_price: null,
+  regular_price: null,
+  selling_price: null,
+});
+
+const newCat = ref("");
+const addingCat = ref(false);
+
 const subtotal = computed(() =>
-  items.value.reduce((s, r) => s + Number(r.qty || 0) * Number(r.unit || 0), 0)
+  items.value.reduce((s, r) => s + Number(r.qty_packs || 0) * Number(r.price_per_pack || 0), 0)
 );
 const total = computed(() => Math.max(0, subtotal.value - Number(form.value.discount || 0)));
 const due = computed(() => Math.max(0, total.value - Number(form.value.paid_amount || 0)));
@@ -231,6 +413,134 @@ async function fetchSuppliers() {
     suppliers.value = res.data.results || res.data;
   } catch (err) {
     console.error("❌ Failed to fetch suppliers:", err);
+  }
+}
+
+async function fetchCategories() {
+  try {
+    const res = await axios.get("/categories/");
+    categories.value = res.data.results || res.data;
+  } catch (err) {
+    console.error("❌ Failed to fetch categories:", err);
+  }
+}
+
+async function addCategory() {
+  if (!newCat.value.trim()) return;
+  addingCat.value = true;
+  try {
+    const { data } = await axios.post("/categories/", { name: newCat.value.trim() });
+    categories.value.unshift(data);
+    quickProduct.value.category = data.id;
+    newCat.value = "";
+    console.log("✅ Category added:", data.name);
+  } catch (err) {
+    console.error("❌ Failed to add category", err);
+    alert("❌ Failed to add category: " + (err.response?.data?.detail || err.message));
+  } finally {
+    addingCat.value = false;
+  }
+}
+
+function openQuickAddProduct() {
+  showQuickAddProduct.value = true;
+  quickProduct.value = {
+    title: "",
+    product_code: "",
+    sku: "",
+    category: null,
+    base_unit: "pcs",
+    purchased_price: null,
+    regular_price: null,
+    selling_price: null,
+  };
+}
+
+async function saveQuickProduct() {
+  // Validation
+  if (!quickProduct.value.title.trim()) {
+    alert("⚠️ Please enter a product title");
+    return;
+  }
+  if (!quickProduct.value.product_code.trim()) {
+    alert("⚠️ Please enter a product code");
+    return;
+  }
+  if (!quickProduct.value.category) {
+    alert("⚠️ Please select a category");
+    return;
+  }
+  if (!quickProduct.value.purchased_price) {
+    alert("⚠️ Please enter purchase price");
+    return;
+  }
+  if (!quickProduct.value.regular_price) {
+    alert("⚠️ Please enter regular price");
+    return;
+  }
+
+  quickProductLoading.value = true;
+
+  try {
+    // Create product
+    const payload = {
+      title: quickProduct.value.title.trim(),
+      product_code: quickProduct.value.product_code.trim(),
+      sku: quickProduct.value.sku?.trim() || null,
+      category: quickProduct.value.category,
+      base_unit: quickProduct.value.base_unit,
+      purchased_price: Number(quickProduct.value.purchased_price).toFixed(2),
+      regular_price: Number(quickProduct.value.regular_price).toFixed(2),
+      selling_price: quickProduct.value.selling_price ? Number(quickProduct.value.selling_price).toFixed(2) : null,
+      stock: 0, // Will be updated by purchase
+    };
+
+    console.log("💾 Creating quick product:", payload);
+    
+    const response = await axios.post("/products/", payload);
+    const newProduct = response.data;
+    
+    console.log("✅ Product created:", newProduct);
+
+    // Automatically add to purchase items
+    items.value.push({
+      pid: newProduct.id,
+      vid: null,
+      title: newProduct.title,
+      variant_name: null,
+      base_unit: newProduct.base_unit,
+      pack_unit: 'unit',
+      pack_size: 1,
+      qty_packs: 1,
+      price_per_pack: Number(newProduct.purchased_price || 0),
+      batch_no: '',
+      expiry_date: '',
+      mrp: null,
+    });
+
+    alert("✅ Product created and added to purchase!");
+    showQuickAddProduct.value = false;
+    search.value = "";
+    suggestions.value = [];
+  } catch (error) {
+    console.error("❌ Error creating product", error.response?.data || error);
+    let errorMsg = "Failed to create product";
+    
+    if (error.response?.data) {
+      if (typeof error.response.data === 'object') {
+        const errors = [];
+        for (const [key, value] of Object.entries(error.response.data)) {
+          errors.push(`${key}: ${Array.isArray(value) ? value.join(', ') : value}`);
+        }
+        errorMsg += ":\n" + errors.join('\n');
+      } else {
+        errorMsg += ": " + error.response.data;
+      }
+    }
+    
+    alert("❌ " + errorMsg);
+  } finally {
+    quickProductLoading.value = false;
   }
 }
 
@@ -262,10 +572,18 @@ async function loadPurchaseData() {
     const purchaseItems = purchase.items || [];
     if (purchaseItems.length > 0) {
       items.value = purchaseItems.map(item => ({
-        pid: item.product.id,
-        title: item.product.title,
-        qty: Number(item.quantity),
-        unit: Number(item.purchase_price),
+        pid: item.product || null,
+        vid: item.product_variant || null,
+        title: item.product_title || 'Unknown',
+        variant_name: item.variant_name || null,
+        base_unit: 'pcs',
+        pack_unit: item.pack_unit || 'unit',
+        pack_size: Number(item.pack_size || 1),
+        qty_packs: Number(item.qty_packs || 1),
+        price_per_pack: Number(item.price_per_pack || 0),
+        batch_no: item.batch_no || '',
+        expiry_date: item.expiry_date || '',
+        mrp: item.mrp || null,
       }));
     } else {
       items.value = [];
@@ -302,20 +620,53 @@ async function addByCode() {
   }
 }
 
-function addItem(p) {
-  const exists = items.value.find(x => x.pid === p.id);
+async function addItem(p, variant = null) {
+  // Check if product has variants
+  if (p.has_variants && !variant) {
+    // Load variants and show modal
+    await loadVariants(p.id);
+    selectedProduct.value = p;
+    showVariantModal.value = true;
+    return;
+  }
+  
+  const key = variant ? `${p.id}_${variant.id}` : p.id;
+  const exists = items.value.find(x => x.pid === p.id && x.vid === (variant?.id || null));
   if (exists) { 
-    exists.qty += 1; 
+    exists.qty_packs += 1; 
     return; 
   }
+  
   items.value.push({
     pid: p.id,
+    vid: variant?.id || null,
     title: p.title,
-    qty: 1,
-    unit: Number(p.purchased_price || 0),
+    variant_name: variant?.variant_name || null,
+    base_unit: p.base_unit || 'pcs',
+    pack_unit: 'unit',
+    pack_size: 1,
+    qty_packs: 1,
+    price_per_pack: Number(variant?.purchase_price || p.purchased_price || 0),
+    batch_no: '',
+    expiry_date: '',
+    mrp: null,
   });
   search.value = "";
   suggestions.value = [];
+  showVariantModal.value = false;
+}
+
+async function loadVariants(productId) {
+  try {
+    const res = await axios.get(`/product-variants/?product=${productId}`);
+    variants.value[productId] = res.data.results || res.data;
+  } catch (err) {
+    console.error("❌ Failed to load variants:", err);
+  }
+}
+
+function selectVariant(variant) {
+  addItem(selectedProduct.value, variant);
 }
 
 function removeItem(i) {
@@ -331,12 +682,17 @@ async function save() {
   saving.value = true;
 
   try {
-    // Prepare items in the exact format expected by the serializer
+    // Prepare items in the new format with pack-based purchasing
     const itemsPayload = items.value.map(r => ({
-      product: r.pid,
-      quantity: parseInt(r.qty),
-      purchase_price: parseFloat(Number(r.unit).toFixed(2)),
-      // Remove total field if it's calculated automatically in the backend
+      product: r.vid ? null : r.pid,
+      product_variant: r.vid || null,
+      pack_unit: r.pack_unit || 'unit',
+      pack_size: parseFloat(Number(r.pack_size || 1).toFixed(3)),
+      qty_packs: parseFloat(Number(r.qty_packs || 1).toFixed(3)),
+      price_per_pack: parseFloat(Number(r.price_per_pack || 0).toFixed(2)),
+      batch_no: r.batch_no || null,
+      expiry_date: r.expiry_date || null,
+      mrp: r.mrp ? parseFloat(Number(r.mrp).toFixed(2)) : null,
     }));
 
     // Prepare the main payload
@@ -344,9 +700,7 @@ async function save() {
       supplier: Number(form.value.supplier),
       invoice_no: form.value.invoice_no.trim(),
       date: form.value.date,
-      subtotal: parseFloat(subtotal.value.toFixed(2)),
       discount: parseFloat(Number(form.value.discount || 0).toFixed(2)),
-      total: parseFloat(total.value.toFixed(2)),
       paid_amount: parseFloat(Number(form.value.paid_amount || 0).toFixed(2)),
       payment_method: form.value.payment_method,
       remarks: form.value.remarks?.trim() || "",
@@ -382,6 +736,28 @@ async function save() {
       console.log("➕ CREATE Request to:", "/purchases/");
       const response = await axios.post("/purchases/", payload);
       console.log("✅ CREATE Success:", response.data);
+      
+      // If paid_amount > 0, create a payment entry in supplier ledger
+      if (payload.paid_amount > 0) {
+        try {
+          console.log("💰 Creating payment entry for paid amount:", payload.paid_amount);
+          const paymentPayload = {
+            supplier: Number(form.value.supplier),
+            amount: payload.paid_amount,
+            payment_method: payload.payment_method,
+            memo_no: `INV-${payload.invoice_no}`,
+            remarks: `Payment for invoice ${payload.invoice_no}`,
+          };
+          
+          await axios.post("/supplier-payments/", paymentPayload);
+          console.log("✅ Payment entry created successfully");
+        } catch (paymentErr) {
+          console.error("❌ Failed to create payment entry:", paymentErr);
+          // Don't fail the entire purchase, just log the error
+          alert("⚠️ Purchase saved but payment ledger entry failed. Please add payment manually in supplier ledger.");
+        }
+      }
+      
       alert("✅ Purchase saved successfully!");
     }
     
@@ -432,6 +808,7 @@ onMounted(async () => {
   console.log("📋 Route query:", route.query);
   
   await fetchSuppliers();
+  await fetchCategories();
   
   const editId = route.query.edit;
   if (editId) {

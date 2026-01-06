@@ -22,6 +22,9 @@ import PaymentRequest from '@/pages/PaymentRequest.vue'
 import DuePayment from '@/pages/DuePayment.vue'
 import ShopSettings from '@/pages/ShopSettings.vue'
 import UserProfile from '@/pages/UserProfile.vue'
+import BarcodeGenerator from '@/pages/BarcodeGenerator.vue'
+import StockDetails from '@/pages/StockDetails.vue'
+import CashTransaction from '@/pages/CashTransaction.vue'
 
 const routes = [
   // PUBLIC ROUTES
@@ -59,6 +62,12 @@ const routes = [
     redirect: '/dashboard',
   },
 
+  // legacy/settings direct path support
+  {
+    path: '/settings',
+    redirect: '/shop/settings',
+  },
+
   // MAIN LAYOUT + PROTECTED CHILD ROUTES
   {
     path: '/',
@@ -79,14 +88,17 @@ const routes = [
       { path: 'expenses', name: 'Expenses', component: Expenses },
       { path: 'suppliers', name: 'Suppliers', component: Suppliers },
       { path: 'add-purchase', name: 'AddPurchase', component: AddPurchase },
+      { path: 'stock-details', name: 'StockDetails', component: StockDetails },
       { path: 'supplier-ledger/:id', name: 'SupplierLedger', component: SupplierLedger, props: true },
       { path: 'sales-report', name: 'SalesReport', component: SalesReport },
       { path: 'business-overview', name: 'BusinessOverview', component: BusinessOverview },
+      { path: 'cash-ledger', name: 'CashTransaction', component: CashTransaction },
 
       // NEW SETTINGS / SUBSCRIPTION PAGES (under layout)
       { path: 'user/profile', name: 'UserProfile', component: UserProfile },
-      { path: 'shop/settings', name: 'ShopSettings', component: ShopSettings, meta: { requiresAuth: true, role: 'admin' } },
+      { path: 'shop/settings', name: 'ShopSettings', component: ShopSettings },
       { path: 'subscription-status', name: 'SubscriptionStatus', component: SubscriptionStatus },
+      { path: 'barcode-generator', name: 'BarcodeGenerator', component: BarcodeGenerator },
     ],
   },
 ]

@@ -5,7 +5,8 @@
       <h2 class="text-2xl font-bold text-gray-800">📘 Supplier Ledger</h2>
       <div class="flex gap-2">
         <button @click="goBack" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded">← Back</button>
-        <button @click="openPay()" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">＋ Add Payment</button>
+        <button @click="addPurchase" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">+ Add Purchase</button>
+        <button @click="openPay()" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">+ Add Payment</button>
       </div>
     </div>
 
@@ -32,6 +33,16 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Error / Loading banner -->
+    <div v-if="errorMsg" class="mb-4">
+      <div class="bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded">
+        ⚠️ {{ errorMsg }}
+      </div>
+    </div>
+    <div v-if="isLoading" class="mb-4">
+      <div class="bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-3 rounded">🔄 Loading ledger…</div>
     </div>
 
     <!-- Export Buttons -->
@@ -145,10 +156,16 @@ const route = useRoute();
 const router = useRouter();
 
 const supplierId = Number(route.params.id);
+console.log("🔍 SupplierLedger mounted, route.params:", route.params, "supplierId:", supplierId);
 const info = ref({ name: "", phone: "", address: "" });
 const numbers = ref({ total_purchase: 0, total_paid: 0, total_due: 0 });
 const ledger = ref([]);
 const tableRef = ref(null);
+
+// UI state
+const isLoading = ref(false);
+const errorMsg = ref("");
+
 
 // Payment Modal
 const showPay = ref(false);
@@ -185,10 +202,24 @@ function goBack() {
   router.back();
 }
 
+function addPurchase() {
+  router.push({
+    path: '/add-purchase',
+    query: { supplier: supplierId }
+  });
+}
+
 // Data Fetching
 async function fetchLedger() {
+  isLoading.value = true;
+  errorMsg.value = "";
   try {
+    const token = localStorage.getItem('access') || localStorage.getItem('token');
+    console.log("🔄 Fetching ledger for supplier ID:", supplierId, "token present:", !!token);
+
     const res = await axios.get(`/suppliers/${supplierId}/ledger/`);
+    console.log("✅ ledger fetch response status:", res.status);
+
     info.value = { 
       name: res.data.supplier, 
       phone: res.data.phone, 
@@ -200,10 +231,18 @@ async function fetchLedger() {
       total_due: Number(res.data.total_due || 0),
     };
     ledger.value = res.data.ledger || [];
-    console.log("📊 Ledger data loaded:", ledger.value);
   } catch (err) {
     console.error("❌ Failed to load ledger:", err?.response?.data || err);
-    alert("Failed to load ledger data.");
+    const status = err?.response?.status;
+    if (status === 401) {
+      errorMsg.value = "Unauthorized. Please login again.";
+    } else if (status === 403) {
+      errorMsg.value = "Permission denied. Your account cannot access supplier data.";
+    } else {
+      errorMsg.value = "Failed to load ledger data. Check console for details.";
+    }
+  } finally {
+    isLoading.value = false;
   }
 }
 
