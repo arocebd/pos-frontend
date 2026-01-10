@@ -205,8 +205,14 @@
         <!-- Product Image -->
         <div class="md:col-span-3">
           <label class="block text-sm font-semibold mb-1">Product Image</label>
-          <input type="file" accept="image/*" @change="onImage" />
-          <p class="text-xs text-gray-500 mt-1">Recommended: 400x400px, max 50 KB</p>
+          <input type="file" accept="image/*" @change="onImage" ref="imageInput" />
+          <p class="text-xs text-gray-500 mt-1">Auto-compressed to 300x300px WebP format (15-50KB)</p>
+          <div v-if="imagePreview" class="mt-2">
+            <img :src="imagePreview" alt="Preview" class="w-32 h-32 object-cover border rounded" />
+            <p v-if="compressedImageSize" class="text-xs text-green-600 mt-1">
+              Compressed size: {{ compressedImageSize }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -350,6 +356,9 @@ const categories = ref([]);
 const newCat = ref("");
 const addingCat = ref(false);
 const loading = ref(false);
+const imagePreview = ref(null);
+const compressedImageSize = ref(null);
+const imageInput = ref(null);
 const isRestockMode = ref(false);
 const stockItemData = ref({
   productId: null,
@@ -457,9 +466,147 @@ const generateBarcode = () => {
   form.value.barcode = "BAR" + Math.floor(100000 + Math.random() * 900000);
 };
 
-// Handle image upload
-const onImage = (e) => {
-  form.value.image = e.target.files[0];
+// Image compression function
+const compressImage = (file, targetSize = 300, maxSizeKB = 50, minSizeKB = 15) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Calculate dimensions to fit within target size while maintaining aspect ratio
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > targetSize) {
+            height = Math.round((height * targetSize) / width);
+            width = targetSize;
+          }
+        } else {
+          if (height > targetSize) {
+            width = Math.round((width * targetSize) / height);
+            height = targetSize;
+          }
+        }
+        
+        // Set canvas to target size
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        
+        // Fill with white background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, targetSize, targetSize);
+        
+        // Draw image centered on canvas
+        const x = (targetSize - width) / 2;
+        const y = (targetSize - height) / 2;
+        ctx.drawImage(img, x, y, width, height);
+        
+        // Function to convert canvas to blob with specific quality
+        const tryQuality = (quality) => {
+          return new Promise((resolve) => {
+            canvas.toBlob((blob) => {
+              resolve(blob);
+            }, 'image/webp', quality);
+          });
+        };
+        
+        // Binary search for optimal quality
+        const findOptimalQuality = async () => {
+          let quality = 0.85;
+          let blob = await tryQuality(quality);
+          let sizeKB = blob.size / 1024;
+          
+          // If too large, reduce quality
+          if (sizeKB > maxSizeKB) {
+            let low = 0.1;
+            let high = quality;
+            
+            while (high - low > 0.05) {
+              quality = (low + high) / 2;
+              blob = await tryQuality(quality);
+              sizeKB = blob.size / 1024;
+              
+              if (sizeKB > maxSizeKB) {
+                high = quality;
+              } else if (sizeKB < minSizeKB) {
+                low = quality;
+              } else {
+                break;
+              }
+            }
+          }
+          
+          // Final attempt with calculated quality
+          blob = await tryQuality(quality);
+          sizeKB = blob.size / 1024;
+          
+          // If still too large, use minimum quality
+          if (sizeKB > maxSizeKB) {
+            blob = await tryQuality(0.1);
+            sizeKB = blob.size / 1024;
+          }
+          
+          return { blob, sizeKB };
+        };
+        
+        findOptimalQuality().then(({ blob, sizeKB }) => {
+          // Create a File object from the blob
+          const compressedFile = new File([blob], 'product_image.webp', {
+            type: 'image/webp',
+            lastModified: Date.now(),
+          });
+          
+          // Create preview URL
+          const previewUrl = URL.createObjectURL(blob);
+          
+          resolve({
+            file: compressedFile,
+            preview: previewUrl,
+            sizeKB: sizeKB.toFixed(1)
+          });
+        });
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = e.target.result;
+    };
+    
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+};
+
+// Handle image upload with compression
+const onImage = async (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    imagePreview.value = null;
+    compressedImageSize.value = null;
+    form.value.image = null;
+    return;
+  }
+  
+  try {
+    const { file: compressedFile, preview, sizeKB } = await compressImage(file);
+    form.value.image = compressedFile;
+    imagePreview.value = preview;
+    compressedImageSize.value = `${sizeKB} KB`;
+    console.log(`✅ Image compressed to ${sizeKB} KB`);
+  } catch (error) {
+    console.error('❌ Image compression failed:', error);
+    alert('Failed to compress image. Please try another image.');
+    // Reset the file input
+    if (imageInput.value) {
+      imageInput.value.value = '';
+    }
+  }
 };
 
 // Variant management
@@ -515,6 +662,11 @@ const resetForm = () => {
     vat_percent: 0,
   };
   variants.value = [];
+  imagePreview.value = null;
+  compressedImageSize.value = null;
+  if (imageInput.value) {
+    imageInput.value.value = '';
+  }
 };
 
 // Go back

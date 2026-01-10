@@ -44,7 +44,19 @@ const routes = [
     })
   },
 
-  // REGISTRATION SUCCESS PAGE
+  // PAYMENT PENDING PAGE
+  {
+    path: '/payment-pending',
+    name: 'PaymentPending',
+    component: () => import('@/pages/PaymentPending.vue'),
+    props: route => ({
+      shop_id: route.query.shop_id,
+      phone: route.query.phone,
+      plan: route.query.plan
+    }),
+  },
+
+  // REGISTRATION SUCCESS PAGE (alias for payment-pending)
   {
     path: '/registration-success',
     name: 'RegistrationSuccess',

@@ -38,7 +38,7 @@
 
       <!-- Footer -->
       <footer class="h-8 text-xs text-slate-500 px-4 flex items-center justify-between border-t bg-white/70 backdrop-blur-sm">
-        <span class="truncate">Powered by Al Zabeer</span>
+        <span class="truncate">Powered by AZ SoftBD</span>
         <span class="whitespace-nowrap">© {{ new Date().getFullYear() }}</span>
       </footer>
     </div>

@@ -3,7 +3,7 @@ import axios from "axios";
 import router from "@/router";
 
 // ✅ Django backend URL
-const baseURL = "http://163.227.239.93/api/";
+const baseURL = "http://127.0.0.1:8000/api/";
 
 const instance = axios.create({
   baseURL: baseURL,
