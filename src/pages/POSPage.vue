@@ -781,11 +781,11 @@ const email_or_link = ref("");
 
 // Payment methods with icons
 const paymentMethods = [
-  { value: "cash", label: "Cash", icon: "💵" },
-  { value: "bkash", label: "bKash", icon: "📱" },
-  { value: "nagad", label: "Nagad", icon: "📱" },
-  { value: "card", label: "Card", icon: "💳" },
-  { value: "due", label: "Due", icon: "📝" },
+  { value: "cash", label: "Cash"},
+  { value: "bkash", label: "Bkash"},
+  { value: "nagad", label: "Nagad"},
+  { value: "card", label: "Card"},
+  { value: "due", label: "Due"},
 ];
 
 // Computed properties
