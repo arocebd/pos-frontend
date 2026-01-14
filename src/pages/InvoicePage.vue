@@ -2,11 +2,10 @@
   <div class="invoice-container">
     <!-- Header -->
     <div class="text-center mb-2">
-      <h1 class="text-base font-bold">Al Zabeer</h1>
-      <p class="text-xs">Town Chikandi Bazar,</p>
-      <p class="text-xs">Shariatpur Shadar, Shariatpur</p>
-      <p class="text-xs">Phone: 01791927084</p>
-      <p class="text-xs">Website: alzabeer.store</p>
+      <h1 class="text-base font-bold">{{ shop_name }}</h1>
+      <p class="text-xs">{{ location || 'No Address' }}</p>
+      <p class="text-xs">Phone: {{ phone }}</p>
+      <p class="text-xs">{{ email_or_link || 'No Website' }}</p>
     </div>
 
     <!-- Invoice Info -->
@@ -79,9 +78,30 @@ import axios from "@/axios"
 const route = useRoute()
 const invoice = ref({ items: [] })
 
+// Shop Info
+const shop_name = ref('')
+const location = ref('')
+const phone = ref('')
+const email_or_link = ref('')
+
 onMounted(async () => {
   const res = await axios.get(`/sales/${route.params.id}/`)
   invoice.value = res.data
+  
+  // Load shop info from API
+  try {
+    const shopRes = await axios.get("/user/profile/")
+    if (shopRes.data && shopRes.data.shop) {
+      const shopData = shopRes.data.shop
+      shop_name.value = shopData.shop_name || 'POS'
+      location.value = shopData.location || ''
+      phone.value = shopData.phone || ''
+      email_or_link.value = shopData.email_or_link || ''
+      console.log('Shop data loaded:', { shop_name: shop_name.value, location: location.value, phone: phone.value, email_or_link: email_or_link.value })
+    }
+  } catch (e) {
+    console.error('Error loading shop data:', e)
+  }
 })
 
 function printInvoice() {

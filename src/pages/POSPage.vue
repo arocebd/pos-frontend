@@ -291,7 +291,7 @@
           
           <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
-            <div class="grid grid-cols-5 gap-2">
+            <div class="grid grid-cols-4 gap-2">
               <button
                 v-for="method in paymentMethods"
                 :key="method.value"
@@ -307,6 +307,40 @@
                 <div class="flex flex-col items-center">
                   <div class="text-2xl mb-1">{{ method.icon }}</div>
                   <span class="text-sm font-medium">{{ method.label }}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile Wallet Provider Selection -->
+          <div v-if="paymentMethod === 'mobile_wallet'" class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-3">Select Provider</label>
+            <div class="grid grid-cols-4 gap-2">
+              <button
+                v-for="provider in mobileWalletProviders"
+                :key="provider.value"
+                @click="mobileWalletProvider = provider.value"
+                :class="[
+                  'py-3 px-2 rounded-xl border-2 transition-all',
+                  mobileWalletProvider === provider.value 
+                    ? 'ring-2 ring-offset-2' 
+                    : 'border-gray-200 hover:border-gray-300'
+                ]"
+                :style="{
+                  borderColor: mobileWalletProvider === provider.value ? provider.color : '',
+                  color: mobileWalletProvider === provider.value ? provider.color : '',
+                  ringColor: provider.color
+                }"
+                :disabled="saleCompleted"
+              >
+                <div class="flex flex-col items-center">
+                  <div class="text-xs font-bold mb-1">{{ provider.label }}</div>
+                  <div 
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                    :style="{ backgroundColor: provider.color }"
+                  >
+                    {{ provider.label.substring(0, 1) }}
+                  </div>
                 </div>
               </button>
             </div>
@@ -343,12 +377,12 @@
           </div>
 
           <div class="space-y-4">
-            <div v-if="paymentMethod !== 'cash' && paymentMethod !== 'due'">
+            <div v-if="paymentMethod === 'mobile_wallet' || paymentMethod === 'card'">
               <label class="block text-sm font-medium text-gray-700 mb-2">Transaction ID</label>
               <input
                 v-model="transactionId"
                 :disabled="saleCompleted"
-                placeholder="Enter transaction ID"
+                placeholder="Enter transaction ID or last 4 digits of the mobile number"
                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-gray-100"
               />
             </div>
@@ -771,6 +805,7 @@ const lastSaleTotal = ref("0.00");
 const paymentMethod = ref("cash");
 const transactionId = ref("");
 const vatApplicableAtCheckout = ref(false);
+const mobileWalletProvider = ref("bkash"); // Default mobile wallet provider
 
 // Shop Info
 const shop_logo = ref("");
@@ -779,13 +814,20 @@ const location = ref("");
 const phone = ref("");
 const email_or_link = ref("");
 
-// Payment methods with icons
+// Payment methods with logo-style icons
 const paymentMethods = [
   { value: "cash", label: "Cash", icon: "💵" },
-  { value: "bkash", label: "bKash", icon: "📱" },
-  { value: "nagad", label: "Nagad", icon: "📱" },
+  { value: "mobile_wallet", label: "Mobile Wallet", icon: "📱" },
   { value: "card", label: "Card", icon: "💳" },
   { value: "due", label: "Due", icon: "📝" },
+];
+
+// Mobile wallet providers with their logos
+const mobileWalletProviders = [
+  { value: "bkash", label: "bKash", color: "#E2136E" },
+  { value: "nagad", label: "Nagad", color: "#EE4023" },
+  { value: "rocket", label: "Rocket", color: "#8B3A96" },
+  { value: "upay", label: "Upay", color: "#FF6B00" },
 ];
 
 // Computed properties
@@ -879,6 +921,11 @@ watch(paymentMethod, (newVal) => {
     receivedAmount.value = 0;
     exchangeAmount.value = 0;
   }
+  
+  // Clear transaction ID when switching payment methods
+  if (newVal !== 'mobile_wallet' && newVal !== 'card') {
+    transactionId.value = '';
+  }
 });
 
 watch([redeemPoints, discount, subtotal], () => {
@@ -920,8 +967,7 @@ function recalculateTotals() {
 function getPaymentMethodName(method) {
   const methods = {
     'cash': 'Cash',
-    'bkash': 'bKash',
-    'nagad': 'Nagad',
+    'mobile_wallet': mobileWalletProviders.find(p => p.value === mobileWalletProvider.value)?.label || 'Mobile Wallet',
     'card': 'Card',
     'due': 'Due Payment'
   };
@@ -1503,7 +1549,7 @@ async function checkout() {
       vat_amount: parseFloat(vatAmount.value || 0),
       total: parseFloat(finalTotal.value),
       payment: {
-        method: paymentMethod.value,
+        method: paymentMethod.value === 'mobile_wallet' ? mobileWalletProvider.value : paymentMethod.value,
         paid_amount: Number(paidAmount.value || 0),
         trx_id: transactionId.value || null,
         received_amount: paymentMethod.value === 'cash' ? Number(receivedAmount.value || 0) : null,

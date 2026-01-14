@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-5xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">➕ Add Product</h2>
+      <h2 class="text-2xl font-bold text-gray-800">Add Product</h2>
       <div class="flex gap-2">
         <button @click="goBack" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded">← Back</button>
       </div>

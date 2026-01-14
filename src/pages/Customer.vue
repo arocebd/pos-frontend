@@ -1,12 +1,12 @@
 <template>
   <div class="max-w-7xl mx-auto p-6">
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold">👥 Customer Management</h2>
+      <h2 class="text-2xl font-bold">Customer Management</h2>
       <button 
         @click="showAddCustomer = true"
         class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
       >
-        ➕ Add Customer
+      + Add Customer
       </button>
     </div>
 

@@ -8,6 +8,7 @@
           <th class="border p-2">Invoice #</th>
           <th class="border p-2">Customer</th>
           <th class="border p-2">Date</th>
+          <th class="border p-2">Payment</th>
           <th class="border p-2">Total</th>
           <th class="border p-2">Action</th>
         </tr>
@@ -17,6 +18,12 @@
           <td class="border p-2 text-center">#{{ sale.id }}</td>
           <td class="border p-2">{{ sale.customer?.name || 'Walk-in' }}</td>
           <td class="border p-2">{{ formatDate(sale.date) }}</td>
+          <td class="border p-2">
+            <div class="flex flex-col text-xs">
+              <span class="font-medium capitalize">{{ getPaymentLabel(sale.payment_method) }}</span>
+              <span v-if="sale.trx_id" class="text-gray-500 text-xs">TRX: {{ sale.trx_id }}</span>
+            </div>
+          </td>
           <td class="border p-2 text-right">{{ sale.total }} ৳</td>
           <td class="border p-2 text-center">
             <button
@@ -35,10 +42,14 @@
       <div class="bg-white p-6 rounded-lg w-[400px] shadow-lg">
         <!-- Preview of invoice -->
         <div class="text-center mb-4 border-b pb-2">
-          <h2 class="text-xl font-bold">🏪 {{ shop_name }}</h2>
-          <p class="text-sm">Invoice: #{{ selectedInvoice.id }}</p>
-          <p class="text-sm">Date: {{ formatDate(selectedInvoice.date) }}</p>
-          <p class="text-sm">Customer: {{ selectedInvoice.customer?.name || 'Walk-in' }}</p>
+          <h2 class="text-xl font-bold">{{ shop_name }}</h2>
+          <p class="text-sm">{{ location || 'No Address' }}</p>
+          <p class="text-sm">Phone: {{ phone }} | {{ email_or_link || 'No Website' }}</p>
+          <div class="mt-2 pt-2 border-t">
+            <p class="text-sm">Invoice: #{{ selectedInvoice.id }}</p>
+            <p class="text-sm">Date: {{ formatDate(selectedInvoice.date) }}</p>
+            <p class="text-sm">Customer: {{ selectedInvoice.customer?.name || 'Walk-in' }}</p>
+          </div>
         </div>
 
         <div class="max-h-60 overflow-y-auto mb-3">
@@ -72,6 +83,26 @@
           <div class="flex justify-between font-bold text-lg mt-1">
             <span>TOTAL:</span>
             <span>{{ formatNumber(selectedInvoice.total) }} ৳</span>
+          </div>
+          
+          <!-- Payment Details -->
+          <div class="border-t border-dashed mt-2 pt-2 text-xs">
+            <div class="flex justify-between">
+              <span class="font-medium">Payment Method:</span>
+              <span class="capitalize">{{ getPaymentLabel(selectedInvoice.payment_method) }}</span>
+            </div>
+            <div v-if="selectedInvoice.trx_id" class="flex justify-between">
+              <span class="font-medium">Transaction ID:</span>
+              <span class="font-mono text-xs">{{ selectedInvoice.trx_id }}</span>
+            </div>
+            <div v-if="selectedInvoice.paid_amount && selectedInvoice.due_amount" class="flex justify-between">
+              <span class="font-medium">Paid:</span>
+              <span>{{ formatNumber(selectedInvoice.paid_amount) }} ৳</span>
+            </div>
+            <div v-if="selectedInvoice.due_amount > 0" class="flex justify-between">
+              <span class="font-medium text-red-600">Due:</span>
+              <span class="text-red-600 font-bold">{{ formatNumber(selectedInvoice.due_amount) }} ৳</span>
+            </div>
           </div>
           
           <!-- Points Preview -->
@@ -137,14 +168,19 @@ onMounted(async () => {
     console.error("Error loading data:", error);
   }
 
+  // Load shop info from API
   try {
-    const shop = JSON.parse(localStorage.getItem('shop') || '{}');
-    shop_name.value = shop.shop_name || 'POS';
-    location.value = shop.location || '';
-    phone.value = shop.phone || '';
-    email_or_link.value = shop.email_or_link || '';
+    const shopRes = await axios.get("/user/profile/");
+    if (shopRes.data && shopRes.data.shop) {
+      const shopData = shopRes.data.shop;
+      shop_name.value = shopData.shop_name || 'POS';
+      location.value = shopData.location || '';
+      phone.value = shopData.phone || '';
+      email_or_link.value = shopData.email_or_link || '';
+      console.log("Shop data loaded:", { shop_name: shop_name.value, location: location.value, phone: phone.value, email_or_link: email_or_link.value });
+    }
   } catch (e) {
-    console.warn("Invalid shop data in localStorage");
+    console.error("Error loading shop data:", e);
   }
 });
 
@@ -166,6 +202,20 @@ const safeNumber = (value) => {
 const getProductName = (productId) => {
   const product = products.value.find(p => p.id === productId);
   return product ? product.title : 'Unknown Product';
+};
+
+const getPaymentLabel = (method) => {
+  const labels = {
+    'cash': 'Cash',
+    'bkash': 'bKash',
+    'nagad': 'Nagad',
+    'rocket': 'Rocket',
+    'upay': 'Upay',
+    'card': 'Card',
+    'due': 'Due Payment',
+    'bank': 'Bank Transfer'
+  };
+  return labels[method] || method;
 };
 
 // Points calculation
@@ -358,6 +408,27 @@ const generateReceiptContent = (invoice, products, currentPoints, pointsEarned, 
         <div class="flex justify-between font-bold border-t pt-2 mt-2">
           <span>Total:</span><span>৳${safeNumber(invoice.total).toFixed(2)}</span>
         </div>
+      </div>
+
+      <div class="mt-2 pt-2 border-t border-dashed text-xs">
+        <div class="flex justify-between">
+          <span>Payment Method:</span><span class="font-bold">${getPaymentLabel(invoice.payment_method)}</span>
+        </div>
+        ${invoice.trx_id ? `
+          <div class="flex justify-between">
+            <span>Transaction ID:</span><span style="font-family: monospace; font-size: 10px;">${invoice.trx_id}</span>
+          </div>
+        ` : ''}
+        ${invoice.paid_amount && invoice.due_amount ? `
+          <div class="flex justify-between">
+            <span>Paid:</span><span>৳${safeNumber(invoice.paid_amount).toFixed(2)}</span>
+          </div>
+        ` : ''}
+        ${safeNumber(invoice.due_amount) > 0 ? `
+          <div class="flex justify-between">
+            <span>Due:</span><span class="text-red font-bold">৳${safeNumber(invoice.due_amount).toFixed(2)}</span>
+          </div>
+        ` : ''}
       </div>
 
       ${invoice.customer ? `

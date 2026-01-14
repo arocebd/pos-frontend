@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-7xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">📦 Stock Details</h2>
+      <h2 class="text-2xl font-bold text-gray-800">Stock Details</h2>
       <div class="flex gap-2">
         <button @click="refreshStock" class="px-4 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg">
           🔄 Refresh

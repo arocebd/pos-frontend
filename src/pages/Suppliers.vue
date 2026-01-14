@@ -2,12 +2,12 @@
   <div class="max-w-6xl mx-auto p-6">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">💼 Supplier Management</h2>
+      <h2 class="text-2xl font-bold text-gray-800">Supplier Management</h2>
       <button
         @click="showAddModal = true"
         class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
       >
-        ➕ Add Supplier
+        + Add Supplier
       </button>
     </div>
 
